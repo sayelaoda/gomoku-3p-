@@ -165,6 +165,9 @@ wss.on('connection', (ws) => {
           currentRoom = room;
           playerInfo = existingPlayer;
           
+          // 确保重连玩家的isOwner为false（因为之前离线时房主已转移）
+          existingPlayer.isOwner = false;
+          
           safeSend(ws, { 
             type: 'joined', 
             roomId: room.id, 
@@ -449,25 +452,21 @@ wss.on('connection', (ws) => {
             if (currentRoom.players.length === 0) {
               rooms.delete(currentRoom.id);
             } else {
-              // 如果移除的是房主，先更新房主标识
+              // 如果移除的是房主，先更新房主标识，再发送ownerChanged
               if (wasOwner) {
                 currentRoom.players[0].isOwner = true;
-              }
-              
-              broadcast(currentRoom, {
-                type: 'playerLeft',
-                playerName: playerName,
-                ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId,
-                players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
-              });
-              
-              if (wasOwner) {
                 broadcast(currentRoom, {
                   type: 'ownerChanged',
                   newOwnerOrderId: currentRoom.players[0].orderId,
                   newOwnerName: currentRoom.players[0].name
                 });
               }
+              
+              broadcast(currentRoom, {
+                type: 'playerLeft',
+                playerName: playerName,
+                players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+              });
             }
           }
         }
@@ -550,7 +549,6 @@ wss.on('connection', (ws) => {
           broadcast(currentRoom, {
             type: 'playerLeft',
             playerName: playerName,
-            ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId,
             players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           });
         }

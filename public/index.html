@@ -403,9 +403,7 @@
           
         case 'playerLeft':
           players = msg.players;
-          if (msg.ownerOrderId !== undefined) {
-            ownerOrderId = msg.ownerOrderId;
-          }
+          // 不更新ownerOrderId，等待ownerChanged消息
           updatePlayerList();
           updateColorPicker();
           addSystemMessage(msg.playerName + ' 离开了房间');
@@ -475,7 +473,7 @@
           waitingReconnect = false;
           pendingOfflineOrderId = null;
           players = msg.players;
-          ownerOrderId = players[0]?.orderId || 0;
+          ownerOrderId = msg.ownerOrderId !== undefined ? msg.ownerOrderId : players[0]?.orderId;
           addSystemMessage(msg.playerName + ' 已重连！');
           updatePlayerList();
           updateTurn();
