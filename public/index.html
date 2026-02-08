@@ -870,7 +870,7 @@
         <div class="room-item" onclick="joinRoom('${r.id}')">
           <div>
             <div style="font-weight: bold; letter-spacing: 4px;">${r.id}</div>
-            <div class="players">${r.playerCount}/3 玩家</div>
+            <div class="players">${r.playerCount}/10 玩家</div>
           </div>
           <button class="btn btn-primary" style="width: auto; padding: 8px 16px;">加入</button>
         </div>
@@ -930,7 +930,7 @@
       document.querySelector(`[data-color-id="${colorId}"]`).classList.add('selected');
       
       // 发送选择颜色消息
-      safeSend({ type: 'selectColor', colorId });
+      safeSend({ type: 'selectColor', colorId, playerId });
     }
     
     // 更新玩家列表

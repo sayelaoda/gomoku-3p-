@@ -225,7 +225,9 @@ wss.on('connection', (ws) => {
         if (currentRoom.gameStarted) return;
         
         const newColorId = msg.colorId;
-        const takenColors = currentRoom.players.map(p => p.id).filter(id => id !== playerId);
+        const clientPlayerId = msg.playerId; // 从客户端获取玩家ID
+        
+        const takenColors = currentRoom.players.filter(p => p.id !== clientPlayerId).map(p => p.id);
         
         // 检查颜色是否被占用
         if (takenColors.includes(newColorId)) {
