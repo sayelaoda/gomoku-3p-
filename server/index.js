@@ -467,32 +467,12 @@ wss.on('connection', (ws) => {
             }
           }
         } else {
-          // 游戏未开始，直接移除玩家
-          const idx = currentRoom.players.indexOf(player);
-          if (idx > -1) {
-            currentRoom.players.splice(idx, 1);
-            
-            if (currentRoom.players.length === 0) {
-              rooms.delete(currentRoom.id);
-            } else {
-              if (wasOwner) {
-                // 清除所有isOwner，再设置新房主
-                currentRoom.players.forEach(p => p.isOwner = false);
-                currentRoom.players[0].isOwner = true;
-                broadcast(currentRoom, {
-                  type: 'ownerChanged',
-                  newOwnerOrderId: currentRoom.players[0].orderId,
-                  newOwnerName: currentRoom.players[0].name
-                });
-              }
-              
-              broadcast(currentRoom, {
-                type: 'playerLeft',
-                playerName: playerName,
-                players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
-              });
-            }
-          }
+          // 游戏未开始，设为离线而不是移除，方便重连
+          broadcast(currentRoom, {
+            type: 'playerLeft',
+            playerName: playerName,
+            players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+          });
         }
         
         currentRoom = null;
