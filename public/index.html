@@ -828,31 +828,15 @@
     }
     
     // 手机端后台检测 - 只在游戏内生效
-    let isInBackground = false;
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) {
-        // 进入后台
-        isInBackground = true;
+        // 进入后台，游戏内自动离开
         if (currentRoomId && ws && ws.readyState === WebSocket.OPEN && document.getElementById('gameScreen').classList.contains('active')) {
           ws.send(JSON.stringify({ type: 'leave' }));
           console.log('游戏内进入后台，自动离开');
         }
-      } else {
-        // 切回前台
-        if (isInBackground && currentRoomId) {
-          console.log('切回前台，尝试重连');
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            let playerName = localStorage.getItem('gomoku_playerName') || '玩家' + Date.now() % 1000;
-            ws.send(JSON.stringify({ 
-              type: 'join', 
-              roomId: currentRoomId, 
-              playerName: playerName,
-              colorId: parseInt(localStorage.getItem('gomoku_colorId') || '0')
-            }));
-          }
-        }
-        isInBackground = false;
       }
+      // 切回前台不做任何操作
     });
     
     window.onload = function() {
