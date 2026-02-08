@@ -128,6 +128,7 @@ wss.on('connection', (ws) => {
           
           if (offlinePlayer) {
             offlinePlayer.ws = ws;
+            // 保持房主身份不变
             currentRoom = room;
             playerInfo = offlinePlayer;
             
@@ -163,6 +164,8 @@ wss.on('connection', (ws) => {
         
         if (existingPlayer) {
           existingPlayer.ws = ws;
+          // 重连时不再自动成为房主
+          // 如果需要转让房主，应该在离线时已经处理过了
           existingPlayer.isOwner = false;
           currentRoom = room;
           playerInfo = existingPlayer;
@@ -437,6 +440,7 @@ wss.on('connection', (ws) => {
           currentRoom.lastActivity = Date.now();
           
           if (wasOwner) {
+            player.isOwner = false; // 先把离线的房主设为false
             const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
             if (onlinePlayers.length > 0) {
               currentRoom.players.forEach(p => p.isOwner = false);
@@ -505,6 +509,10 @@ wss.on('connection', (ws) => {
     const playerOrderId = player.orderId;
     
     if (currentRoom.gameStarted) {
+      // 房主离线时，先把自己的isOwner设为false，再处理转让
+      if (wasOwner) {
+        player.isOwner = false;
+      }
       player.ws = null;
       
       broadcast(currentRoom, {
