@@ -342,7 +342,7 @@
     let ws = null;
     let myOrderId = null;
     let myColorId = null;
-    let ownerOrderId = null;
+    let ownerOrderId = 0;
     let currentRoomId = null;
     let players = [];
     let currentTurn = null;
@@ -362,7 +362,11 @@
       };
       
       ws.onmessage = (event) => {
-        handleMessage(JSON.parse(event.data));
+        try {
+          handleMessage(JSON.parse(event.data));
+        } catch (e) {
+          console.error('Message parse error:', e);
+        }
       };
       
       ws.onclose = () => {
@@ -383,8 +387,8 @@
           currentRoomId = msg.roomId;
           myOrderId = msg.orderId;
           myColorId = msg.colorId;
-          ownerOrderId = msg.ownerOrderId;
-          players = msg.players;
+          ownerOrderId = msg.ownerOrderId ?? 0;
+          players = msg.players || [];
           waitingReconnect = false;
           pendingOfflineOrderId = null;
           localStorage.setItem('gomoku_colorId', msg.colorId);
@@ -399,34 +403,31 @@
           break;
           
         case 'playerJoined':
-          players = msg.players;
-          // 不更新ownerOrderId，等待ownerChanged消息
+          players = msg.players || [];
           updatePlayerList();
           updateColorPicker();
           break;
           
         case 'playerLeft':
-          players = msg.players;
-          // 不更新ownerOrderId，等待ownerChanged消息
+          players = msg.players || [];
           updatePlayerList();
           updateColorPicker();
           addSystemMessage(msg.playerName + ' 离开了房间');
           break;
           
         case 'colorChanged':
-          players = msg.players;
+          players = msg.players || [];
           updatePlayerList();
           updateColorPicker();
           break;
           
         case 'ownerChanged':
-          ownerOrderId = msg.newOwnerOrderId;
+          ownerOrderId = msg.newOwnerOrderId ?? 0;
           addSystemMessage('新房主: ' + msg.newOwnerName);
           updatePlayerList();
           
-          // 如果有离线信息，新房主显示确认弹窗
           if (msg.offlinePlayerName && myOrderId === ownerOrderId) {
-            pendingOfflineOrderId = msg.offlineOrderId;
+            pendingOfflineOrderId = msg.offlineOrderId ?? null;
             document.getElementById('ownerConfirmMsg').textContent = '玩家 ' + msg.offlinePlayerName + ' 离线了，是否等待重连？';
             document.getElementById('ownerConfirmModal').style.display = 'flex';
           }
@@ -442,8 +443,8 @@
           waitingReconnect = false;
           pendingOfflineOrderId = null;
           clearChat();
-          players = msg.players;
-          ownerOrderId = msg.ownerOrderId !== undefined ? msg.ownerOrderId : players[0]?.orderId;
+          players = msg.players || [];
+          ownerOrderId = msg.ownerOrderId ?? getFirstPlayerOrderId();
           updateGame();
           updatePlayerList();
           addSystemMessage('游戏开始！按加入顺序下棋');
@@ -465,19 +466,18 @@
           break;
           
         case 'ownerConfirm':
-          // 保留作为后备：非房主离线时的处理
           if (myOrderId === ownerOrderId) {
-            pendingOfflineOrderId = msg.orderId;
+            pendingOfflineOrderId = msg.orderId ?? null;
             document.getElementById('ownerConfirmMsg').textContent = '玩家 ' + msg.playerName + ' 离线了，是否等待重连？';
             document.getElementById('ownerConfirmModal').style.display = 'flex';
           }
           break;
-        
+          
         case 'playerReconnected':
           waitingReconnect = false;
           pendingOfflineOrderId = null;
-          players = msg.players;
-          ownerOrderId = msg.ownerOrderId !== undefined ? msg.ownerOrderId : players[0]?.orderId;
+          players = msg.players || [];
+          ownerOrderId = msg.ownerOrderId ?? getFirstPlayerOrderId();
           addSystemMessage(msg.playerName + ' 已重连！');
           updatePlayerList();
           updateTurn();
@@ -491,11 +491,11 @@
           break;
           
         case 'playerRemoved':
-          waitingReconnect = msg.waitingReconnect !== undefined ? msg.waitingReconnect : false;
+          waitingReconnect = msg.waitingReconnect ?? false;
           pendingOfflineOrderId = null;
-          players = msg.players;
-          currentTurn = msg.currentPlayer;
-          ownerOrderId = msg.ownerOrderId !== undefined ? msg.ownerOrderId : players[0]?.orderId;
+          players = msg.players || [];
+          currentTurn = msg.currentPlayer ?? currentTurn;
+          ownerOrderId = msg.ownerOrderId ?? getFirstPlayerOrderId();
           addSystemMessage(msg.playerName + ' 已被移除');
           updatePlayerList();
           updateTurn();
@@ -508,20 +508,21 @@
           currentTurn = msg.currentPlayer;
           waitingReconnect = false;
           pendingOfflineOrderId = null;
-          players = msg.players;
+          players = msg.players || [];
           switchScreen('gameScreen');
           document.getElementById('gameRoomIdDisplay').textContent = msg.roomId;
           document.getElementById('homeSidebar').style.display = 'none';
           document.getElementById('gameSidebar').style.display = 'block';
           clearChat();
           
-          // 恢复棋盘
           initBoard();
-          for (let i = 0; i < 15; i++) {
-            for (let j = 0; j < 15; j++) {
-              if (msg.board[i][j] !== 0) {
-                const colorId = msg.board[i][j] - 1;
-                placePiece(i, j, colorId);
+          if (msg.board) {
+            for (let i = 0; i < 15; i++) {
+              for (let j = 0; j < 15; j++) {
+                if (msg.board[i] && msg.board[i][j] !== 0) {
+                  const colorId = msg.board[i][j] - 1;
+                  placePiece(i, j, colorId);
+                }
               }
             }
           }
@@ -602,9 +603,9 @@
     }
     
     function updatePlayerList() {
-      document.getElementById('playerCount').textContent = '(' + players.length + '/10)';
+      document.getElementById('playerCount').textContent = '(' + (players.length || 0) + '/10)';
       const list = document.getElementById('playerList');
-      list.innerHTML = players.map((p, idx) => {
+      list.innerHTML = (players || []).map((p, idx) => {
         const isOwner = p.orderId === ownerOrderId;
         const isMe = p.orderId === myOrderId;
         return '<div class="player-item">' +
@@ -616,15 +617,15 @@
       const startBtn = document.getElementById('startBtn');
       if (myOrderId === ownerOrderId) {
         startBtn.style.display = 'block';
-        startBtn.disabled = players.length < 2;
-        startBtn.textContent = players.length < 2 ? '开始游戏 (还需 ' + (2 - players.length) + ' 人)' : '开始游戏';
+        startBtn.disabled = (players || []).length < 2;
+        startBtn.textContent = (players || []).length < 2 ? '开始游戏 (还需 ' + (2 - (players || []).length) + ' 人)' : '开始游戏';
       } else {
         startBtn.style.display = 'none';
       }
     }
     
     function updateColorPicker() {
-      const takenColors = players.map(p => p.colorId);
+      const takenColors = (players || []).map(p => p.colorId);
       const picker = document.getElementById('colorPicker');
       picker.innerHTML = PIECE_CLASSES.map((cls, idx) => {
         const isTaken = takenColors.includes(idx);
@@ -672,7 +673,7 @@
     }
     
     function updateGame() {
-      const me = players.find(p => p.orderId === myOrderId);
+      const me = (players || []).find(p => p.orderId === myOrderId);
       if (me) {
         document.getElementById('myPieceColor').style.background = me.color;
         document.getElementById('myPieceName').textContent = me.role;
@@ -689,7 +690,7 @@
         return;
       }
       
-      const player = players.find(p => p.orderId === currentTurn);
+      const player = (players || []).find(p => p.orderId === currentTurn);
       
       if (player) {
         const isMyTurn = player.orderId === myOrderId;
@@ -698,14 +699,13 @@
           ? '轮到你了！(' + player.role + ')'
           : '等待 ' + player.name + ' 下棋 (' + player.role + ')';
       } else {
-        // 如果找不到玩家，显示默认信息
         turnIndicator.className = 'turn-indicator waiting';
         turnIndicator.innerHTML = '等待游戏中...';
       }
     }
     
     function showWinner(winnerOrderId) {
-      const winner = players.find(p => p.orderId === winnerOrderId);
+      const winner = (players || []).find(p => p.orderId === winnerOrderId);
       document.getElementById('winnerInfo').innerHTML = '<p style="font-size:24px;margin-bottom:10px;">🏆 ' + (winner ? winner.name : '未知') + ' 获胜！</p><p>(' + (winner ? winner.role : '') + ')</p>';
       document.getElementById('winnerModal').style.display = 'flex';
     }
@@ -736,7 +736,7 @@
       }
       currentRoomId = null;
       myOrderId = null;
-      ownerOrderId = null;
+      ownerOrderId = 0;
       players = [];
       waitingReconnect = false;
       pendingOfflineOrderId = null;
@@ -752,7 +752,7 @@
       }
       currentRoomId = null;
       myOrderId = null;
-      ownerOrderId = null;
+      ownerOrderId = 0;
       players = [];
       waitingReconnect = false;
       pendingOfflineOrderId = null;
@@ -789,7 +789,7 @@
     
     function addChatMessage(msg) {
       const container = document.getElementById('chatMessages');
-      const player = players.find(p => p.orderId === msg.orderId);
+      const player = (players || []).find(p => p.orderId === msg.orderId);
       const div = document.createElement('div');
       div.className = 'chat-message';
       div.innerHTML = '<div class="chat-header"><span class="chat-color-dot" style="background:' + (player ? player.color : '#999') + '"></span><span>' + (msg.playerName || '玩家') + '</span></div><div>' + msg.message + '</div>';

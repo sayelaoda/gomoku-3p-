@@ -22,6 +22,15 @@ function broadcast(room, message, excludeWs = null) {
   });
 }
 
+function getOwnerOrderId(room) {
+  const owner = room.players.find(p => p.isOwner);
+  return owner ? owner.orderId : (room.players[0] ? room.players[0].orderId : 0);
+}
+
+function getCurrentPlayer(room) {
+  return room.currentPlayer;
+}
+
 wss.on('connection', (ws, req) => {
   console.log('New connection:', req.headers.host);
 });
@@ -114,18 +123,14 @@ wss.on('connection', (ws) => {
           return;
         }
         
-        // 游戏已开始，尝试重连
         if (room.gameStarted) {
-          // 查找离线玩家（通过名字匹配）
-          const offlinePlayer = room.players.find(p => !p.ws || p.ws.readyState !== WebSocket.OPEN);
+          const offlinePlayer = room.players.find(p => (!p.ws || p.ws.readyState !== WebSocket.OPEN) && p.name === msg.playerName);
           
-          if (offlinePlayer && offlinePlayer.name === msg.playerName) {
+          if (offlinePlayer) {
             offlinePlayer.ws = ws;
-            
             currentRoom = room;
             playerInfo = offlinePlayer;
             
-            // 发送完整的游戏状态
             safeSend(ws, { 
               type: 'rejoined', 
               roomId: room.id,
@@ -133,15 +138,14 @@ wss.on('connection', (ws) => {
               colorId: offlinePlayer.colorId,
               board: room.board,
               currentPlayer: room.currentPlayer,
-              ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0,
+              ownerOrderId: getOwnerOrderId(room),
               players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
             });
             
-            // 通知所有人
             broadcast(room, {
               type: 'playerReconnected',
               playerName: offlinePlayer.name,
-              ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0,
+              ownerOrderId: getOwnerOrderId(room),
               players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
             });
           } else {
@@ -150,44 +154,37 @@ wss.on('connection', (ws) => {
           return;
         }
         
-        // 游戏未开始，检查是否满员
         if (room.players.length >= 10) {
           safeSend(ws, { type: 'error', message: '房间已满' });
           return;
         }
         
-        // 检查是否重连（同一房间，同一名字，离线状态）
         const existingPlayer = room.players.find(p => p.name === msg.playerName && (!p.ws || p.ws.readyState !== WebSocket.OPEN));
         
         if (existingPlayer) {
-          // 重连
           existingPlayer.ws = ws;
+          existingPlayer.isOwner = false;
           currentRoom = room;
           playerInfo = existingPlayer;
-          
-          // 确保重连玩家的isOwner为false（因为之前离线时房主已转移）
-          existingPlayer.isOwner = false;
           
           safeSend(ws, { 
             type: 'joined', 
             roomId: room.id, 
             orderId: existingPlayer.orderId,
             colorId: existingPlayer.colorId,
-            ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0,
+            ownerOrderId: getOwnerOrderId(room),
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           });
           
-          // 通知其他人
           broadcast(room, {
             type: 'playerReconnected',
             playerName: existingPlayer.name,
-            ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0,
+            ownerOrderId: getOwnerOrderId(room),
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           }, ws);
           return;
         }
         
-        // 新玩家加入
         const takenColors = room.players.map(p => p.colorId);
         let selectedColorId = msg.colorId;
         
@@ -220,7 +217,7 @@ wss.on('connection', (ws) => {
           roomId: room.id, 
           orderId: player.orderId,
           colorId: player.colorId,
-          ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0,
+          ownerOrderId: getOwnerOrderId(room),
           players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
         });
         
@@ -232,17 +229,15 @@ wss.on('connection', (ws) => {
       }
       
       case 'ownerDecision': {
-        // 房主决定是否等待重连
         if (!currentRoom || !currentRoom.waitingReconnect) return;
         
         const owner = currentRoom.players.find(p => p.isOwner);
-        if (msg.orderId !== owner?.orderId) return; // 只有房主
+        if (msg.orderId !== (owner ? owner.orderId : -1)) return;
         
         const offlineOrderId = currentRoom.pendingOfflineOrderId;
         const offlinePlayer = currentRoom.players.find(p => p.orderId === offlineOrderId);
         
         if (msg.continueWaiting) {
-          // 继续等待
           currentRoom.waitingReconnect = false;
           currentRoom.pendingOfflineOrderId = null;
           broadcast(currentRoom, {
@@ -250,25 +245,20 @@ wss.on('connection', (ws) => {
             message: '继续等待 ' + (offlinePlayer ? offlinePlayer.name : '玩家') + ' 重连...'
           });
         } else {
-          // 不等待，移除离线玩家
           if (offlinePlayer) {
             const removedWasOwner = offlinePlayer.isOwner;
             currentRoom.players = currentRoom.players.filter(p => p.orderId !== offlineOrderId);
             currentRoom.waitingReconnect = false;
             currentRoom.pendingOfflineOrderId = null;
             
-            // 如果移除的是房主，需要转移房主
             if (removedWasOwner && currentRoom.players.length > 0) {
               currentRoom.players[0].isOwner = true;
             }
             
-            // 确保当前玩家是有效在线玩家
-            const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
-            if (onlinePlayers.length > 0) {
-              const currentIdx = onlinePlayers.findIndex(p => p.orderId === currentRoom.currentPlayer);
-              if (currentIdx === -1 || currentIdx >= onlinePlayers.length) {
-                const offlineIdx = currentRoom.players.findIndex(p => p.orderId === offlineOrderId);
-                currentRoom.currentPlayer = currentRoom.players[Math.min(offlineIdx, currentRoom.players.length - 1)].orderId;
+            if (currentRoom.players.length > 0) {
+              const currentIdx = currentRoom.players.findIndex(p => p.orderId === currentRoom.currentPlayer);
+              if (currentIdx === -1 || currentIdx >= currentRoom.players.length) {
+                currentRoom.currentPlayer = currentRoom.players[0] ? currentRoom.players[0].orderId : 0;
               }
             }
             
@@ -278,7 +268,7 @@ wss.on('connection', (ws) => {
               waitingReconnect: false,
               players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color })),
               currentPlayer: currentRoom.currentPlayer,
-              ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId ?? currentRoom.players[0]?.orderId ?? 0
+              ownerOrderId: getOwnerOrderId(currentRoom)
             });
           }
         }
@@ -303,7 +293,7 @@ wss.on('connection', (ws) => {
         broadcast(currentRoom, { 
           type: 'gameStart', 
           currentPlayer: 0,
-          ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId ?? currentRoom.players[0]?.orderId ?? 0,
+          ownerOrderId: getOwnerOrderId(currentRoom),
           players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
         });
         break;
@@ -336,7 +326,7 @@ wss.on('connection', (ws) => {
       
       case 'move': {
         if (!currentRoom || !currentRoom.gameStarted) return;
-        if (currentRoom.waitingReconnect) return; // 等待重连时不能下棋
+        if (currentRoom.waitingReconnect) return;
         if (currentRoom.currentPlayer !== msg.orderId) return;
         
         const { row, col } = msg;
@@ -401,7 +391,6 @@ wss.on('connection', (ws) => {
         const playerName = player.name;
         const playerOrderId = player.orderId;
         
-        // 游戏已开始，标记离线
         if (currentRoom.gameStarted) {
           player.ws = null;
           
@@ -411,20 +400,16 @@ wss.on('connection', (ws) => {
             orderId: playerOrderId
           });
           
-          // 任何玩家离线都暂停游戏，让房主决定
           currentRoom.waitingReconnect = true;
           currentRoom.pendingOfflineOrderId = playerOrderId;
           currentRoom.lastActivity = Date.now();
           
-          // 如果是房主离线，转移房主
           if (wasOwner) {
             const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
             if (onlinePlayers.length > 0) {
-              // 转移房主标识
               currentRoom.players.forEach(p => p.isOwner = false);
               onlinePlayers[0].isOwner = true;
               
-              // 通知所有玩家房主变更，并让新房主显示确认弹窗
               broadcast(currentRoom, {
                 type: 'ownerChanged',
                 newOwnerOrderId: onlinePlayers[0].orderId,
@@ -434,7 +419,6 @@ wss.on('connection', (ws) => {
               });
             }
           } else {
-            // 通知房主做决定
             const owner = currentRoom.players.find(p => p.isOwner);
             if (owner && owner.ws && owner.ws.readyState === WebSocket.OPEN) {
               safeSend(owner.ws, {
@@ -445,7 +429,6 @@ wss.on('connection', (ws) => {
             }
           }
         } else {
-          // 游戏未开始，直接移除
           const idx = currentRoom.players.indexOf(player);
           if (idx > -1) {
             currentRoom.players.splice(idx, 1);
@@ -453,7 +436,6 @@ wss.on('connection', (ws) => {
             if (currentRoom.players.length === 0) {
               rooms.delete(currentRoom.id);
             } else {
-              // 如果移除的是房主，先更新房主标识，再发送ownerChanged
               if (wasOwner) {
                 currentRoom.players[0].isOwner = true;
                 broadcast(currentRoom, {
@@ -489,7 +471,6 @@ wss.on('connection', (ws) => {
     const playerName = player.name;
     const playerOrderId = player.orderId;
     
-    // 游戏已开始，标记离线
     if (currentRoom.gameStarted) {
       player.ws = null;
       
@@ -499,12 +480,10 @@ wss.on('connection', (ws) => {
         orderId: playerOrderId
       });
       
-      // 任何玩家离线都暂停游戏，让房主决定
       currentRoom.waitingReconnect = true;
       currentRoom.pendingOfflineOrderId = playerOrderId;
       currentRoom.lastActivity = Date.now();
       
-      // 如果是房主离线，转移房主
       if (wasOwner) {
         const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
         if (onlinePlayers.length > 0) {
@@ -530,7 +509,6 @@ wss.on('connection', (ws) => {
         }
       }
     } else {
-      // 游戏未开始，直接移除
       const idx = currentRoom.players.indexOf(player);
       if (idx > -1) {
         currentRoom.players.splice(idx, 1);
@@ -561,7 +539,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Clean up every 3 minutes
 setInterval(() => {
   const now = Date.now();
   let cleaned = 0;
@@ -582,13 +559,11 @@ setInterval(() => {
         return;
       }
       
-      // 等待重连超时（5分钟）
       if (room.waitingReconnect && now - room.lastActivity > 5 * 60 * 1000) {
         const offlineOrderId = room.pendingOfflineOrderId;
         const offlinePlayer = room.players.find(p => p.orderId === offlineOrderId);
-        const removedWasOwner = offlinePlayer?.isOwner;
+        const removedWasOwner = offlinePlayer ? offlinePlayer.isOwner : false;
         
-        // 移除离线玩家
         room.players = room.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
         room.waitingReconnect = false;
         room.pendingOfflineOrderId = null;
@@ -599,11 +574,8 @@ setInterval(() => {
         
         if (room.players.length > 0) {
           const onlinePlayers = room.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
-          if (onlinePlayers.length > 0) {
-            const currentIdx = onlinePlayers.findIndex(p => p.orderId === room.currentPlayer);
-            if (currentIdx === -1 || currentIdx >= onlinePlayers.length) {
-              room.currentPlayer = onlinePlayers[0].orderId;
-            }
+          if (onlinePlayers.length > 0 && onlinePlayers.findIndex(p => p.orderId === room.currentPlayer) === -1) {
+            room.currentPlayer = onlinePlayers[0].orderId;
           }
           
           broadcast(room, {
@@ -612,7 +584,7 @@ setInterval(() => {
             waitingReconnect: false,
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color })),
             currentPlayer: room.currentPlayer,
-            ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? room.players[0]?.orderId ?? 0
+            ownerOrderId: getOwnerOrderId(room)
           });
         } else {
           rooms.delete(roomId);
