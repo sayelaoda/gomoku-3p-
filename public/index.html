@@ -243,6 +243,42 @@
       background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
     }
     
+    .piece.blue {
+      background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3);
+    }
+    
+    .piece.green {
+      background: radial-gradient(circle at 30% 30%, #55efc4, #00b894);
+    }
+    
+    .piece.yellow {
+      background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e);
+    }
+    
+    .piece.purple {
+      background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7);
+    }
+    
+    .piece.orange {
+      background: radial-gradient(circle at 30% 30%, #fab1a0, #e17055);
+    }
+    
+    .piece.pink {
+      background: radial-gradient(circle at 30% 30%, #fd79a8, #e84393);
+    }
+    
+    .piece.cyan {
+      background: radial-gradient(circle at 30% 30%, #81ecec, #00cec9);
+    }
+    
+    .piece.brown {
+      background: radial-gradient(circle at 30% 30%, #d7ccc8, #8d6e63);
+    }
+    
+    .piece.gray {
+      background: radial-gradient(circle at 30% 30%, #b2bec3, #636e72);
+    }
+    
     .game-info {
       display: flex;
       justify-content: space-between;
@@ -820,7 +856,7 @@
     
     // 显示房间列表
     function showRooms() {
-      ws.send(JSON.stringify({ type: 'getRooms' }));
+      safeSend({ type: 'getRooms' });
       switchScreen('roomsScreen');
     }
     
@@ -852,9 +888,16 @@
     // 初始化颜色选择器
     function initColorSelector() {
       const colors = [
-        { id: 0, color: '#000000', name: '黑棋' },
-        { id: 1, color: '#FFFFFF', name: '白棋' },
-        { id: 2, color: '#FF0000', name: '红棋' }
+        { id: 0, color: '#000000', name: '黑棋', class: 'black' },
+        { id: 1, color: '#FFFFFF', name: '白棋', class: 'white' },
+        { id: 2, color: '#FF0000', name: '红棋', class: 'red' },
+        { id: 3, color: '#0984e3', name: '蓝棋', class: 'blue' },
+        { id: 4, color: '#00b894', name: '绿棋', class: 'green' },
+        { id: 5, color: '#fdcb6e', name: '黄棋', class: 'yellow' },
+        { id: 6, color: '#6c5ce7', name: '紫棋', class: 'purple' },
+        { id: 7, color: '#e17055', name: '橙棋', class: 'orange' },
+        { id: 8, color: '#e84393', name: '粉棋', class: 'pink' },
+        { id: 9, color: '#00cec9', name: '青棋', class: 'cyan' }
       ];
       
       const container = document.getElementById('colorOptions');
@@ -894,15 +937,14 @@
     function updatePlayersList(list) {
       players = list;
       const container = document.getElementById('playersList');
-      const colors = ['#000000', '#FFFFFF', '#FF0000'];
-      const colorNames = ['黑棋', '白棋', '红棋'];
+      const colorNames = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
       
       container.innerHTML = list.map((p, i) => `
         <div class="player-item ${p.id === playerId ? 'current' : ''}">
-          <div class="player-color" style="background: ${colors[i]}"></div>
+          <div class="player-color" style="background: ${p.color || getPlayerColor(p.id)}"></div>
           <div class="player-info">
             <div class="player-nickname">👤 ${p.name}</div>
-            <div class="player-role">${p.id === playerId ? '✅ 你是' : ''}${colorNames[i]}</div>
+            <div class="player-role">${p.id === playerId ? '✅ 你是' : ''}${colorNames[p.id]}</div>
           </div>
         </div>
       `).join('');
@@ -912,7 +954,7 @@
       if (startBtn) {
         const activePlayers = list.filter(p => p.ws !== null).length;
         startBtn.disabled = activePlayers < 2;
-        startBtn.textContent = `🚀 开始游戏 (${activePlayers}/2-3人)`;
+        startBtn.textContent = `🚀 开始游戏 (${activePlayers}/2-10人)`;
       }
     }
     
@@ -935,18 +977,28 @@
       updateChatHeader();
     }
     
+    // 获取颜色
+    const ALL_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
+    const ALL_COLOR_NAMES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
+    
+    function getPlayerColor(id) {
+      return ALL_COLORS[id] || '#000000';
+    }
+    
+    function getPlayerName(id) {
+      return ALL_COLOR_NAMES[id] || '未知';
+    }
+    
     // 更新我的棋子信息
     function updateMyPieceInfo() {
       const pieceInfo = document.getElementById('myPieceInfo');
       const pieceColor = document.getElementById('myPieceColor');
       const pieceName = document.getElementById('myPieceName');
-      const colors = ['#000000', '#FFFFFF', '#FF0000'];
-      const colorNames = ['黑棋', '白棋', '红棋'];
       
       const myPlayer = players.find(p => p.id === playerId);
       if (myPlayer) {
-        pieceColor.style.background = colors[myPlayer.id];
-        pieceName.textContent = colorNames[myPlayer.id];
+        pieceColor.style.background = getPlayerColor(myPlayer.id);
+        pieceName.textContent = getPlayerName(myPlayer.id);
       }
     }
     
@@ -954,7 +1006,13 @@
     function updateChatHeader() {
       const nickname = document.getElementById('myNickname');
       const nicknameColor = document.getElementById('myNicknameColor');
-      const colors = ['#000000', '#FFFFFF', '#FF0000'];
+      
+      const myPlayer = players.find(p => p.id === playerId);
+      if (myPlayer) {
+        nickname.textContent = myPlayer.name;
+        nicknameColor.style.background = getPlayerColor(myPlayer.id);
+      }
+    }
       
       const myPlayer = players.find(p => p.id === playerId);
       if (myPlayer) {
@@ -974,15 +1032,13 @@
       const piece = document.createElement('div');
       piece.className = 'piece';
       
-      const colors = ['black', 'white', 'red'];
-      piece.classList.add(colors[player]);
+      const colorClasses = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
+      piece.classList.add(colorClasses[player]);
       cell.appendChild(piece);
     }
     
     // 更新当前回合
     function updateTurn(player) {
-      const colors = ['#000000', '#FFFFFF', '#FF0000'];
-      const names = ['黑棋', '白棋', '红棋'];
       const indicator = document.getElementById('turnIndicator');
       const text = document.getElementById('turnText');
       
@@ -990,8 +1046,8 @@
       const currentPlayerInfo = players.find(p => p.id === player);
       const playerName = currentPlayerInfo ? currentPlayerInfo.name : '未知';
       
-      indicator.style.background = colors[player];
-      text.textContent = `🎯 现在是 ${names[player]} (${playerName}) 落子`;
+      indicator.style.background = getPlayerColor(player);
+      text.textContent = `🎯 现在是 ${getPlayerName(player)} (${playerName}) 落子`;
       
       const turnDiv = document.getElementById('currentTurn');
       if (player === 1) {

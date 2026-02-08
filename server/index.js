@@ -12,6 +12,13 @@ const wss = new WebSocket.Server({
   path: '/'
 });
 
+// 安全发送WebSocket消息
+function safeSend(ws, data) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
+  }
+}
+
 // 处理WebSocket升级
 wss.on('connection', (ws, req) => {
   console.log('New WebSocket connection from:', req.headers.host);
@@ -22,8 +29,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // 房间管理
 const rooms = new Map();
-const PLAYERS = ['黑棋', '白棋', '红棋'];
-const COLORS = ['#000000', '#FFFFFF', '#FF0000'];
+const PLAYERS = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
+const COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
 
 // 生成房间ID
 function generateRoomId() {
@@ -56,7 +63,7 @@ function joinRoom(ws, roomId, playerName, colorId = null) {
   // 统计在线玩家
   const onlinePlayers = room.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
   
-  if (onlinePlayers.length >= 3) return { success: false, message: '房间已满' };
+  if (onlinePlayers.length >= 10) return { success: false, message: '房间已满' };
   if (room.gameStarted) return { success: false, message: '游戏已开始' };
   
   // 检查是否掉线重连
@@ -73,7 +80,7 @@ function joinRoom(ws, roomId, playerName, colorId = null) {
   let playerId = colorId;
   if (playerId === null || takenColors.includes(playerId)) {
     // 自动分配第一个可用颜色
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 10; i++) {
       if (!takenColors.includes(i)) {
         playerId = i;
         break;
@@ -97,7 +104,7 @@ function joinRoom(ws, roomId, playerName, colorId = null) {
 function broadcast(room, message, excludeWs = null) {
   room.players.forEach(player => {
     if (player.ws !== excludeWs && player.ws.readyState === WebSocket.OPEN) {
-      player.ws.send(JSON.stringify(message));
+      safeSend(player.ws, message);
     }
   });
 }
@@ -159,7 +166,7 @@ wss.on('connection', (ws) => {
         currentRoom = room;
         playerInfo = player;
         
-        ws.send(JSON.stringify({ type: 'created', roomId, playerId: 0 }));
+        safeSend(ws, { type: 'created', roomId, playerId: 0 });
         break;
       }
       
@@ -167,7 +174,7 @@ wss.on('connection', (ws) => {
         // 加入房间
         const result = joinRoom(ws, msg.roomId, msg.playerName || `玩家${Date.now() % 1000}`, msg.colorId);
         if (!result.success) {
-          ws.send(JSON.stringify({ type: 'error', message: result.message }));
+          safeSend(ws, { type: 'error', message: result.message });
           return;
         }
         currentRoom = result.room;
@@ -176,13 +183,13 @@ wss.on('connection', (ws) => {
         // 获取当前玩家信息
         playerInfo = result.room.players.find(p => p.ws === ws);
         
-        ws.send(JSON.stringify({ 
+        safeSend(ws, { 
           type: 'joined', 
           roomId: result.room.id, 
           playerId: playerInfo.id,
           reconnect: result.reconnect || false,
           players: result.room.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
-        }));
+        });
         
         // 通知其他玩家
         broadcast(result.room, {
@@ -195,7 +202,7 @@ wss.on('connection', (ws) => {
       case 'start': {
         // 开始游戏
         if (!currentRoom || currentRoom.players.length < 2) {
-          ws.send(JSON.stringify({ type: 'error', message: '至少需要2名玩家' }));
+          safeSend(ws, { type: 'error', message: '至少需要2名玩家' });
           return;
         }
         currentRoom.gameStarted = true;
@@ -222,7 +229,7 @@ wss.on('connection', (ws) => {
         
         // 检查颜色是否被占用
         if (takenColors.includes(newColorId)) {
-          ws.send(JSON.stringify({ type: 'error', message: '该颜色已被占用' }));
+          safeSend(ws, { type: 'error', message: '该颜色已被占用' });
           return;
         }
         
@@ -311,7 +318,7 @@ wss.on('connection', (ws) => {
             roomList.push({ id, playerCount: room.players.length });
           }
         });
-        ws.send(JSON.stringify({ type: 'rooms', rooms: roomList }));
+        safeSend(ws, { type: 'rooms', rooms: roomList });
         break;
       }
     }
