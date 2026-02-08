@@ -540,13 +540,13 @@
         padding: 16px;
       }
       #gameBoard {
-        max-width: 400px;
+        max-width: 500px;
       }
     }
     
     @media (min-width: 1200px) {
       #gameBoard {
-        max-width: 600px;
+        max-width: 700px;
       }
     }
     
@@ -696,6 +696,7 @@
   <script>
     let ws = null;
     let playerId = null;
+    let roomOwnerId = null; // 房主ID
     let currentRoom = null;
     let players = [];
     
@@ -782,11 +783,13 @@
       switch (msg.type) {
         case 'created':
           playerId = msg.playerId;
+          roomOwnerId = msg.playerId; // 创建房间的人是房主
           showWaiting(msg.roomId);
           break;
           
         case 'joined':
           playerId = msg.playerId;
+          roomOwnerId = msg.ownerId || null; // 从服务器获取房主ID
           showWaiting(msg.roomId);
           updatePlayersList(msg.players);
           if (msg.reconnect) {
@@ -804,7 +807,9 @@
           
         case 'playerLeft':
           updatePlayersList(msg.players);
-          alert(`${msg.playerName} 离开了房间`);
+          if (msg.playerName) {
+            alert(`${msg.playerName} 离开了房间`);
+          }
           break;
           
         case 'gameEnd':
@@ -837,7 +842,7 @@
         case 'colorChanged':
           // 更新玩家列表和颜色选择器
           updatePlayersList(msg.players);
-          initColorSelector();
+          highlightSelectedColor();
           break;
       }
     }
@@ -883,6 +888,15 @@
       document.getElementById('roomId').textContent = roomId;
       switchScreen('waitingScreen');
       initColorSelector();
+      
+      // 控制开始按钮显示
+      const startBtn = document.getElementById('startBtn');
+      if (playerId === roomOwnerId) {
+        startBtn.style.display = 'block';
+        startBtn.disabled = true; // 等其他人加入
+      } else {
+        startBtn.style.display = 'none';
+      }
     }
     
     // 初始化颜色选择器
@@ -909,8 +923,19 @@
              title="${c.name}"></div>
       `).join('');
       
-      // 默认选择黑棋
-      selectColor(0);
+      // 高亮当前选择的颜色
+      highlightSelectedColor();
+    }
+    
+    // 高亮当前选择的颜色
+    function highlightSelectedColor() {
+      document.querySelectorAll('.color-option').forEach(el => {
+        el.classList.remove('selected');
+        const colorId = parseInt(el.dataset.colorId);
+        if (colorId === playerId) {
+          el.classList.add('selected');
+        }
+      });
     }
     
     // 选择颜色
@@ -921,13 +946,14 @@
         return; // 颜色已被占用
       }
       
-      // 更新UI
-      document.querySelectorAll('.color-option').forEach((el, i) => {
+      // 更新UI高亮
+      document.querySelectorAll('.color-option').forEach(el => {
         el.classList.remove('selected');
-        el.classList.toggle('taken', takenColors.includes(i));
+        const elColorId = parseInt(el.dataset.colorId);
+        if (elColorId === colorId) {
+          el.classList.add('selected');
+        }
       });
-      
-      document.querySelector(`[data-color-id="${colorId}"]`).classList.add('selected');
       
       // 发送选择颜色消息
       safeSend({ type: 'selectColor', colorId, playerId });
@@ -949,12 +975,17 @@
         </div>
       `).join('');
       
-      // 更新开始按钮状态
+      // 更新开始按钮状态（只有房主能看到）
       const startBtn = document.getElementById('startBtn');
       if (startBtn) {
         const activePlayers = list.filter(p => p.ws !== null).length;
-        startBtn.disabled = activePlayers < 2;
-        startBtn.textContent = `🚀 开始游戏 (${activePlayers}/2-10人)`;
+        if (playerId === roomOwnerId) {
+          startBtn.style.display = 'block';
+          startBtn.disabled = activePlayers < 2;
+          startBtn.textContent = `🚀 开始游戏 (${activePlayers}/2-10人)`;
+        } else {
+          startBtn.style.display = 'none';
+        }
       }
     }
     
@@ -980,6 +1011,7 @@
     // 获取颜色
     const ALL_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
     const ALL_COLOR_NAMES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
+    const ALL_COLOR_CLASSES = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
     
     function getPlayerColor(id) {
       return ALL_COLORS[id] || '#000000';

@@ -166,7 +166,7 @@ wss.on('connection', (ws) => {
         currentRoom = room;
         playerInfo = player;
         
-        safeSend(ws, { type: 'created', roomId, playerId: 0 });
+        safeSend(ws, { type: 'created', roomId, playerId: 0, ownerId: 0 });
         break;
       }
       
@@ -183,10 +183,14 @@ wss.on('connection', (ws) => {
         // 获取当前玩家信息
         playerInfo = result.room.players.find(p => p.ws === ws);
         
+        // 获取房主ID
+        const ownerId = result.room.players.length > 0 ? result.room.players[0].id : null;
+        
         safeSend(ws, { 
           type: 'joined', 
           roomId: result.room.id, 
           playerId: playerInfo.id,
+          ownerId: ownerId,
           reconnect: result.reconnect || false,
           players: result.room.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
         });
