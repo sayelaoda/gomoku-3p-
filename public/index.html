@@ -16,13 +16,7 @@
       padding: 20px;
     }
     
-    .container {
-      display: flex;
-      gap: 20px;
-      max-width: 1400px;
-      width: 100%;
-    }
-    
+    .container { display: flex; gap: 20px; max-width: 1400px; width: 100%; }
     .game-panel {
       background: white;
       border-radius: 16px;
@@ -44,13 +38,7 @@
     
     h1 { text-align: center; color: #333; margin-bottom: 20px; }
     
-    .rules {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    
+    .rules { background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     .rules h3 { margin-bottom: 12px; color: #333; }
     .rules ul { padding-left: 20px; color: #666; }
     .rules li { margin-bottom: 6px; }
@@ -65,7 +53,6 @@
       border-radius: 8px;
       font-size: 16px;
     }
-    
     input[type="text"]:focus { outline: none; border-color: #667eea; }
     
     .btn {
@@ -82,14 +69,10 @@
     .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
     .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
     .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #eb3349, #f45c43); color: white; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     
-    .color-picker {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+    .color-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
     
     .color-option {
       width: 40px;
@@ -98,7 +81,6 @@
       cursor: pointer;
       border: 3px solid transparent;
     }
-    
     .color-option:hover { transform: scale(1.1); }
     .color-option.selected { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.3); }
     .color-option.disabled { opacity: 0.3; cursor: not-allowed; }
@@ -113,18 +95,10 @@
       margin-bottom: 8px;
       cursor: pointer;
     }
-    
     .room-item:hover { background: #e9ecef; }
     .room-id { font-weight: bold; font-family: monospace; font-size: 16px; color: #667eea; }
     .room-count { color: #666; font-size: 14px; }
-    .join-btn-small {
-      padding: 6px 12px;
-      font-size: 12px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 4px;
-    }
+    .join-btn-small { padding: 6px 12px; font-size: 12px; background: #667eea; color: white; border: none; border-radius: 4px; }
     
     .game-board {
       display: grid;
@@ -137,13 +111,7 @@
       max-width: 500px;
     }
     
-    .cell {
-      aspect-ratio: 1;
-      background: #e8c39e;
-      border-radius: 2px;
-      cursor: pointer;
-    }
-    
+    .cell { aspect-ratio: 1; background: #e8c39e; border-radius: 2px; cursor: pointer; }
     .cell:hover { background: #d4a574; }
     
     .piece {
@@ -152,7 +120,6 @@
       border-radius: 50%;
       box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    
     .piece.black { background: radial-gradient(circle at 30% 30%, #666, #000); }
     .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
     .piece.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c00); }
@@ -164,12 +131,7 @@
     .piece.pink { background: radial-gradient(circle at 30% 30%, #fd79a8, #e84393); }
     .piece.cyan { background: radial-gradient(circle at 30% 30%, #81ecec, #00cec9); }
     
-    .player-list {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
+    .player-list { background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     
     .player-item {
       display: flex;
@@ -177,7 +139,6 @@
       padding: 8px 0;
       border-bottom: 1px solid #e9ecef;
     }
-    
     .player-item:last-child { border-bottom: none; }
     
     .player-order {
@@ -194,6 +155,7 @@
       margin-right: 10px;
     }
     
+    .player-order.offline { background: #999; }
     .player-name { flex: 1; font-weight: 600; }
     .player-color { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ddd; }
     
@@ -206,18 +168,10 @@
       margin-bottom: 16px;
       font-weight: bold;
     }
-    
     .turn-indicator.waiting { background: #6c757d; }
+    .turn-indicator.offline { background: #f39c12; }
     
-    .chat-container {
-      height: 300px;
-      overflow-y: auto;
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-    
+    .chat-container { height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
     .chat-message { margin-bottom: 8px; padding: 8px 12px; border-radius: 8px; background: white; }
     .chat-message.system { background: #e9ecef; color: #666; font-size: 14px; text-align: center; }
     
@@ -241,8 +195,10 @@
       z-index: 1000;
     }
     
-    .modal-content { background: white; padding: 30px; border-radius: 16px; text-align: center; }
+    .modal-content { background: white; padding: 30px; border-radius: 16px; text-align: center; max-width: 400px; }
     .modal-content h2 { margin-bottom: 20px; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-buttons .btn { margin-bottom: 0; }
     
     .screen { display: none; }
     .screen.active { display: block; }
@@ -256,32 +212,12 @@
       border-bottom: 2px solid #f0f0f0;
     }
     
-    .room-id-badge {
-      background: #667eea;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 18px;
-    }
+    .room-id-badge { background: #667eea; color: white; padding: 8px 16px; border-radius: 8px; font-family: monospace; font-size: 18px; }
     
-    .my-piece-info {
-      text-align: center;
-      padding: 12px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-top: 16px;
-    }
+    .my-piece-info { text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-top: 16px; }
+    .my-piece-color { display: inline-block; width: 24px; height: 24px; border-radius: 50%; vertical-align: middle; margin: 0 8px; border: 2px solid #ddd; }
     
-    .my-piece-color {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      vertical-align: middle;
-      margin: 0 8px;
-      border: 2px solid #ddd;
-    }
+    .skip-btn { margin-top: 10px; padding: 10px; background: #f39c12; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
     
     @media (max-width: 900px) {
       .container { flex-direction: column; }
@@ -294,7 +230,6 @@
     <div class="game-panel">
       <h1>多人五子棋</h1>
       
-      <!-- 主菜单 -->
       <div id="menuScreen" class="screen active">
         <div class="rules">
           <h3>游戏规则</h3>
@@ -314,7 +249,6 @@
         <button class="btn btn-success" onclick="createRoom()">创建房间</button>
       </div>
       
-      <!-- 等待房间 -->
       <div id="roomScreen" class="screen">
         <div class="room-header">
           <span class="room-id-badge" id="roomIdDisplay">ROOM</span>
@@ -331,10 +265,9 @@
           <div class="color-picker" id="colorPicker"></div>
         </div>
         
-        <button class="btn btn-primary" id="startBtn" onclick="startGame()" disabled style="display:none;">开始游戏</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startGame()" style="display:none;">开始游戏</button>
       </div>
       
-      <!-- 游戏界面 -->
       <div id="gameScreen" class="screen">
         <div class="room-header">
           <span class="room-id-badge" id="gameRoomIdDisplay">ROOM</span>
@@ -350,36 +283,28 @@
         </div>
         
         <button class="btn btn-warning" onclick="leaveGameToHome()" style="margin-top: 16px;">返回主页</button>
+        
+        <div id="skipSection" style="display:none; margin-top: 16px;">
+          <button class="skip-btn" onclick="requestSkip()">⏭️ 跳过离线玩家回合</button>
+        </div>
       </div>
     </div>
     
-    <!-- 侧边栏 -->
     <div class="sidebar">
-      <!-- 主页：房间列表 -->
       <div id="homeSidebar">
         <h3 style="margin-bottom: 16px;">加入房间</h3>
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-          <input type="text" id="joinRoomInput" placeholder="输入房间号" maxlength="6" style="
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-          ">
-          <button class="btn btn-primary" onclick="joinByInput()" style="width: auto; padding: 10px 16px;">加入</button>
+          <input type="text" id="joinRoomInput" placeholder="输入房间号" maxlength="6" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:16px;text-transform:uppercase;letter-spacing:2px;text-align:center;">
+          <button class="btn btn-primary" onclick="joinByInput()" style="width:auto;padding:10px 16px;">加入</button>
         </div>
         
         <h4 style="margin-bottom: 12px;">公开房间</h4>
         <div id="roomList" class="room-list">
-          <div style="text-align: center; color: #999; padding: 20px;">加载中...</div>
+          <div style="text-align:center;color:#999;padding:20px;">加载中...</div>
         </div>
       </div>
       
-      <!-- 游戏内：聊天 -->
-      <div id="gameSidebar" style="display: none;">
+      <div id="gameSidebar" style="display:none;">
         <h3 style="margin-bottom: 16px;">聊天</h3>
         <div class="chat-container" id="chatMessages"></div>
         <div class="chat-input">
@@ -395,8 +320,20 @@
     <div class="modal-content">
       <h2>游戏结束！</h2>
       <div id="winnerInfo"></div>
-      <button class="btn btn-success" onclick="closeModal(); restartGame();" style="margin-top: 20px;">再来一局</button>
+      <button class="btn btn-success" onclick="closeModal(); restartGame();" style="margin-top:20px;">再来一局</button>
       <button class="btn btn-warning" onclick="closeModal()">返回房间</button>
+    </div>
+  </div>
+  
+  <!-- 跳过确认弹窗 -->
+  <div id="skipModal" class="modal">
+    <div class="modal-content">
+      <h2>跳过玩家回合</h2>
+      <p id="skipMessage" style="margin: 20px 0; color: #666;">玩家 XXX 离线了，是否跳过他的回合？</p>
+      <div class="modal-buttons">
+        <button class="btn btn-success" onclick="approveSkip()">同意</button>
+        <button class="btn btn-danger" onclick="rejectSkip()">拒绝</button>
+      </div>
     </div>
   </div>
 
@@ -412,6 +349,7 @@
     let currentRoomId = null;
     let players = [];
     let currentTurn = null;
+    let pendingSkipOrderId = null;
     
     function connect() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -457,18 +395,21 @@
         case 'playerJoined':
         case 'playerLeft':
         case 'playerOffline':
-        case 'playerRejoined':
         case 'colorChanged':
           players = msg.players;
           updatePlayerList();
           updateColorPicker();
-          if (msg.type === 'playerLeft' && msg.playerName) {
+          if (msg.type === 'playerLeft') {
             addSystemMessage(msg.playerName + ' 离开了房间');
-          } else if (msg.type === 'playerOffline' && msg.playerName) {
+          } else if (msg.type === 'playerOffline') {
             addSystemMessage(msg.playerName + ' 离线了');
-          } else if (msg.type === 'playerRejoined' && msg.playerName) {
-            addSystemMessage(msg.playerName + ' 重新连接了');
           }
+          break;
+          
+        case 'ownerChanged':
+          ownerOrderId = msg.newOwnerOrderId;
+          addSystemMessage('新房主: ' + msg.newOwnerName);
+          updatePlayerList();
           break;
           
         case 'gameStart':
@@ -478,30 +419,53 @@
           document.getElementById('gameSidebar').style.display = 'block';
           initBoard();
           currentTurn = 0;
+          document.getElementById('skipSection').style.display = 'none';
           updateGame();
           addSystemMessage('游戏开始！按加入顺序下棋');
           break;
           
         case 'move':
-        case 'playerSkipped':
-          if (msg.type === 'playerSkipped') {
-            if (msg.playerName) {
-              addSystemMessage(msg.playerName + ' 离线了，跳过回合');
-            }
-            currentTurn = msg.currentPlayer;
-          } else {
-            placePiece(msg.row, msg.col, msg.colorId);
-            currentTurn = msg.currentPlayer;
-          }
+          placePiece(msg.row, msg.col, msg.colorId);
+          currentTurn = msg.currentPlayer;
+          document.getElementById('skipSection').style.display = (myOrderId === ownerOrderId && players.some(p => !p.online)) ? 'block' : 'none';
           updateTurn();
-          if (msg.type === 'move' && msg.gameOver) {
+          if (msg.gameOver) {
             showWinner(msg.winner);
           }
+          break;
+          
+        case 'turnWaiting':
+          addSystemMessage('等待 ' + msg.playerName + ' 重连...');
+          document.getElementById('skipSection').style.display = (myOrderId === ownerOrderId) ? 'block' : 'none';
+          break;
+          
+        case 'skipRequest':
+          // 房主收到跳过请求
+          pendingSkipOrderId = msg.offlineOrderId;
+          document.getElementById('skipMessage').textContent = '玩家 ' + msg.offlinePlayerName + ' 离线了，是否跳过他的回合？';
+          document.getElementById('skipModal').style.display = 'flex';
+          break;
+          
+        case 'waitingForSkip':
+          addSystemMessage('等待房主决定是否跳过 ' + msg.offlinePlayerName + ' 的回合...');
+          break;
+          
+        case 'skipApproved':
+          addSystemMessage('已跳过离线玩家回合，继续游戏');
+          currentTurn = msg.currentPlayer;
+          document.getElementById('skipSection').style.display = 'none';
+          updateTurn();
+          break;
+          
+        case 'skipRejected':
+          addSystemMessage(msg.message);
+          document.getElementById('skipSection').style.display = (myOrderId === ownerOrderId && players.some(p => !p.online)) ? 'block' : 'none';
           break;
           
         case 'restart':
           initBoard();
           currentTurn = 0;
+          document.getElementById('skipSection').style.display = 'none';
           updateTurn();
           addSystemMessage('游戏重新开始！');
           break;
@@ -512,6 +476,10 @@
           
         case 'chat':
           addChatMessage(msg);
+          break;
+          
+        case 'gameEnd':
+          addSystemMessage(msg.reason);
           break;
           
         case 'error':
@@ -557,18 +525,19 @@
       list.innerHTML = players.map((p, idx) => {
         const isOwner = p.orderId === ownerOrderId;
         const isMe = p.orderId === myOrderId;
+        const isOffline = !p.online;
         return '<div class="player-item">' +
-          '<div class="player-order">' + (idx + 1) + '</div>' +
-          '<div class="player-name">' + p.name + (isOwner ? ' 👑' : '') + (isMe ? ' (你)' : '') + '</div>' +
+          '<div class="player-order ' + (isOffline ? 'offline' : '') + '">' + (idx + 1) + '</div>' +
+          '<div class="player-name">' + p.name + (isOwner ? ' 👑' : '') + (isMe ? ' (你)' : '') + (isOffline ? ' (离线)' : '') + '</div>' +
           '<div class="player-color" style="background:' + p.color + '"></div></div>';
       }).join('');
       
-      // 只有房主能看到开始按钮
       const startBtn = document.getElementById('startBtn');
+      const onlineCount = players.filter(p => p.online).length;
       if (myOrderId === ownerOrderId) {
         startBtn.style.display = 'block';
-        startBtn.disabled = players.length < 2;
-        startBtn.textContent = players.length < 2 ? '开始游戏 (还需 ' + (2 - players.length) + ' 人)' : '开始游戏';
+        startBtn.disabled = onlineCount < 2;
+        startBtn.textContent = onlineCount < 2 ? '开始游戏 (还需 ' + (2 - onlineCount) + ' 人)' : '开始游戏';
       } else {
         startBtn.style.display = 'none';
       }
@@ -636,16 +605,22 @@
       
       if (player) {
         const isMyTurn = player.orderId === myOrderId;
-        turnIndicator.className = isMyTurn ? 'turn-indicator' : 'turn-indicator waiting';
-        turnIndicator.innerHTML = isMyTurn 
-          ? '轮到你了！(' + player.role + ')'
-          : '等待 ' + player.name + ' 下棋 (' + player.role + ')';
+        const isOffline = !player.online;
+        
+        if (isOffline) {
+          turnIndicator.className = 'turn-indicator offline';
+          turnIndicator.innerHTML = '⚠️ ' + player.name + ' 离线中';
+        } else {
+          turnIndicator.className = isMyTurn ? 'turn-indicator' : 'turn-indicator waiting';
+          turnIndicator.innerHTML = isMyTurn 
+            ? '轮到你了！(' + player.role + ')'
+            : '等待 ' + player.name + ' 下棋 (' + player.role + ')';
+        }
       }
     }
     
     function showWinner(winnerOrderId) {
       const winner = players.find(p => p.orderId === winnerOrderId);
-      const isMe = winnerOrderId === myOrderId;
       document.getElementById('winnerInfo').innerHTML = '<p style="font-size:24px;margin-bottom:10px;">🏆 ' + (winner ? winner.name : '未知') + ' 获胜！</p><p>(' + (winner ? winner.role : '') + ')</p>';
       document.getElementById('winnerModal').style.display = 'flex';
     }
@@ -657,6 +632,26 @@
     
     function closeModal() {
       document.getElementById('winnerModal').style.display = 'none';
+      document.getElementById('skipModal').style.display = 'none';
+    }
+    
+    function requestSkip() {
+      // 找到离线的玩家
+      const offlinePlayer = players.find(p => !p.online && p.orderId === currentTurn);
+      if (offlinePlayer) {
+        safeSend({ type: 'requestSkip', offlineOrderId: offlinePlayer.orderId });
+        addSystemMessage('已请求跳过 ' + offlinePlayer.name + ' 的回合，等待房主确认...');
+      }
+    }
+    
+    function approveSkip() {
+      safeSend({ type: 'approveSkip', orderId: myOrderId });
+      document.getElementById('skipModal').style.display = 'none';
+    }
+    
+    function rejectSkip() {
+      safeSend({ type: 'rejectSkip', orderId: myOrderId, offlineOrderId: pendingSkipOrderId });
+      document.getElementById('skipModal').style.display = 'none';
     }
     
     function leaveCurrentRoom() {
@@ -672,7 +667,6 @@
       refreshRoomList();
     }
     
-    // 游戏内直接返回主页（不发送leave消息）
     function leaveGameToHome() {
       currentRoomId = null;
       myOrderId = null;
@@ -727,75 +721,10 @@
       container.scrollTop = container.scrollHeight;
     }
     
-    // 检测页面可见性变化
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        // 页面回到前台，检查连接状态
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-          reconnect();
-        } else {
-          // 发送心跳
-          ws.send(JSON.stringify({ type: 'ping' }));
-        }
-      }
-    }
-    
-    // 重连函数
-    function reconnect() {
-      if (ws) {
-        ws.close();
-      }
-      
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(protocol + '//' + window.location.host);
-      
-      ws.onopen = () => {
-        console.log('Reconnected');
-        // 如果在房间中，尝试重新加入
-        if (currentRoomId && myOrderId !== null) {
-          safeSend({ type: 'rejoin', roomId: currentRoomId, orderId: myOrderId });
-        }
-        refreshRoomList();
-      };
-      
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        
-        // 处理重连响应
-        if (msg.type === 'rejoined') {
-          players = msg.players;
-          updatePlayerList();
-          updateColorPicker();
-          return;
-        }
-        
-        // 忽略pong消息
-        if (msg.type === 'pong') return;
-        
-        handleMessage(msg);
-      };
-      
-      ws.onclose = () => {
-        setTimeout(reconnect, 3000);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-    }
-    
     window.onload = function() {
       connect();
       initBoard();
       setInterval(refreshRoomList, 10000);
-      // 添加心跳定时器
-      setInterval(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
-        }
-      }, 30000);
-      // 监听页面可见性变化
-      document.addEventListener('visibilitychange', handleVisibilityChange);
     };
   </script>
 </body>
