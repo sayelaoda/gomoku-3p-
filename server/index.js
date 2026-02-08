@@ -259,6 +259,7 @@ wss.on('connection', (ws) => {
         broadcast(currentRoom, { 
           type: 'gameStart', 
           currentPlayer: 0,
+          ownerOrderId: currentRoom.players[0]?.orderId,
           players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
         });
         break;

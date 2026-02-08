@@ -396,6 +396,10 @@
         case 'playerLeft':
         case 'colorChanged':
           players = msg.players;
+          // 同步房主为第一个玩家
+          if (msg.type === 'playerLeft' || msg.type === 'playerJoined') {
+            ownerOrderId = players[0]?.orderId;
+          }
           updatePlayerList();
           updateColorPicker();
           if (msg.type === 'playerLeft') {
@@ -416,9 +420,11 @@
           document.getElementById('gameSidebar').style.display = 'block';
           initBoard();
           currentTurn = 0;
+          waitingReconnect = false;
+          pendingOfflineOrderId = null;
           clearChat();
           players = msg.players; // 更新玩家列表
-          ownerOrderId = msg.ownerOrderId || 0;
+          ownerOrderId = msg.ownerOrderId !== undefined ? msg.ownerOrderId : players[0]?.orderId;
           updateGame();
           updatePlayerList();
           addSystemMessage('游戏开始！按加入顺序下棋');
