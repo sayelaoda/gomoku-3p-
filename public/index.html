@@ -3,14 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>三人五子棋 - 联机对战</title>
+  <title>多人五子棋</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -24,64 +19,54 @@
     .container {
       display: flex;
       gap: 20px;
-      max-width: 1200px;
+      max-width: 1400px;
       width: 100%;
     }
     
     .game-panel {
       background: white;
       border-radius: 16px;
-      padding: 24px;
+      padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      flex: 1;
+      min-width: 0;
     }
     
     .sidebar {
+      width: 280px;
       background: white;
       border-radius: 16px;
       padding: 20px;
-      width: 280px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-height: 700px;
+      overflow-y: auto;
     }
     
-    h1 {
-      text-align: center;
-      color: #333;
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    
+    .rules {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
       margin-bottom: 20px;
-      font-size: 24px;
     }
     
-    .screen {
-      display: none;
-    }
+    .rules h3 { margin-bottom: 12px; color: #333; }
+    .rules ul { padding-left: 20px; color: #666; }
+    .rules li { margin-bottom: 6px; }
     
-    .screen.active {
-      display: block;
-    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
     
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #555;
-      font-weight: 500;
-    }
-    
-    input {
+    input[type="text"] {
       width: 100%;
       padding: 12px;
       border: 2px solid #e0e0e0;
       border-radius: 8px;
       font-size: 16px;
-      transition: border-color 0.3s;
     }
     
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
+    input[type="text"]:focus { outline: none; border-color: #667eea; }
     
     .btn {
       width: 100%;
@@ -91,265 +76,32 @@
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
       margin-bottom: 10px;
     }
     
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-    }
-    
-    .btn-success {
-      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-      color: white;
-    }
-    
-    .btn-warning {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      color: white;
-    }
-    
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    .room-info {
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    
-    .room-id {
-      font-size: 32px;
-      font-weight: bold;
-      text-align: center;
-      letter-spacing: 8px;
-      color: #667eea;
-      margin: 10px 0;
-    }
-    
-    .players-list {
-      margin: 16px 0;
-    }
-    
-    .player-item {
+    .color-picker {
       display: flex;
-      align-items: center;
-      padding: 12px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-      background: #f8f9fa;
-    }
-    
-    .player-item.current {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-    
-    .player-color {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      margin-right: 12px;
-      border: 2px solid #ddd;
-    }
-    
-    .player-info {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .player-nickname {
-      font-weight: bold;
-    }
-    
-    .player-role {
-      font-size: 12px;
-      opacity: 0.8;
-    }
-    
-    .player-item.current .player-role {
-      color: rgba(255,255,255,0.9);
-    }
-    
-    .player-name {
-      flex: 1;
-      font-weight: 500;
-    }
-    
-    .player-status {
-      font-size: 12px;
-      color: #999;
-    }
-    
-    .player-item.current .player-status {
-      color: rgba(255,255,255,0.8);
-    }
-    
-    #gameBoard {
-      display: grid;
-      grid-template-columns: repeat(15, 1fr);
-      gap: 1px;
-      background: #d4a574;
-      border: 2px solid #8b6914;
-      padding: 2px;
-      cursor: pointer;
-      width: 100%;
-      max-width: 500px;
-      aspect-ratio: 1;
-      margin: 0 auto;
-    }
-    
-    .cell {
-      width: 100%;
-      padding-bottom: 100%;
-      background: #f7e4ad;
-      position: relative;
-    }
-    
-    .cell:hover {
-      background: #f0d78c;
-    }
-    
-    .piece {
-      width: 80%;
-      height: 80%;
-      border-radius: 50%;
-      position: absolute;
-      top: 10%;
-      left: 10%;
-      z-index: 1;
-    }
-    
-    .piece.black {
-      background: radial-gradient(circle at 30% 30%, #555, #000);
-    }
-    
-    .piece.white {
-      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-      border: 1px solid #ddd;
-    }
-    
-    .piece.red {
-      background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
-    }
-    
-    .piece.blue {
-      background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3);
-    }
-    
-    .piece.green {
-      background: radial-gradient(circle at 30% 30%, #55efc4, #00b894);
-    }
-    
-    .piece.yellow {
-      background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e);
-    }
-    
-    .piece.purple {
-      background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7);
-    }
-    
-    .piece.orange {
-      background: radial-gradient(circle at 30% 30%, #fab1a0, #e17055);
-    }
-    
-    .piece.pink {
-      background: radial-gradient(circle at 30% 30%, #fd79a8, #e84393);
-    }
-    
-    .piece.cyan {
-      background: radial-gradient(circle at 30% 30%, #81ecec, #00cec9);
-    }
-    
-    .piece.brown {
-      background: radial-gradient(circle at 30% 30%, #d7ccc8, #8d6e63);
-    }
-    
-    .piece.gray {
-      background: radial-gradient(circle at 30% 30%, #b2bec3, #636e72);
-    }
-    
-    .game-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-bottom: 16px;
     }
     
-    .current-turn {
-      font-size: 18px;
-      font-weight: bold;
-      padding: 8px 16px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .turn-indicator {
-      width: 20px;
-      height: 20px;
+    .color-option {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      display: inline-block;
+      cursor: pointer;
+      border: 3px solid transparent;
     }
     
-    .chat-container {
-      height: 300px;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    #chatMessages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    
-    .chat-message {
-      margin-bottom: 8px;
-      padding: 8px;
-      border-radius: 8px;
-      background: #f8f9fa;
-    }
-    
-    .chat-message .sender {
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    
-    .chat-input {
-      display: flex;
-      gap: 8px;
-    }
-    
-    #chatInput {
-      flex: 1;
-      margin-bottom: 0;
-    }
-    
-    #sendChat {
-      width: auto;
-      padding: 12px 20px;
-      margin-bottom: 0;
-    }
-    
-    .room-list {
-      max-height: 200px;
-      overflow-y: auto;
-    }
+    .color-option:hover { transform: scale(1.1); }
+    .color-option.selected { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.3); }
+    .color-option.disabled { opacity: 0.3; cursor: not-allowed; }
     
     .room-item {
       display: flex;
@@ -360,38 +112,121 @@
       border-radius: 8px;
       margin-bottom: 8px;
       cursor: pointer;
-      transition: background 0.3s;
     }
     
-    .room-item:hover {
-      background: #e9ecef;
-    }
-    
-    .room-item .players {
+    .room-item:hover { background: #e9ecef; }
+    .room-id { font-weight: bold; font-family: monospace; font-size: 16px; color: #667eea; }
+    .room-count { color: #666; font-size: 14px; }
+    .join-btn-small {
+      padding: 6px 12px;
       font-size: 12px;
-      color: #666;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
     }
     
-    .rules {
-      background: #fff3cd;
-      padding: 16px;
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 1px;
+      background: #d4a574;
+      padding: 10px;
       border-radius: 8px;
+      margin: 0 auto 20px;
+      max-width: 500px;
+    }
+    
+    .cell {
+      aspect-ratio: 1;
+      background: #e8c39e;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    
+    .cell:hover { background: #d4a574; }
+    
+    .piece {
+      width: 85%;
+      height: 85%;
+      border-radius: 50%;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .piece.black { background: radial-gradient(circle at 30% 30%, #666, #000); }
+    .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
+    .piece.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c00); }
+    .piece.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3); }
+    .piece.green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
+    .piece.yellow { background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e); }
+    .piece.purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7); }
+    .piece.orange { background: radial-gradient(circle at 30% 30%, #fab1a0, #e17055); }
+    .piece.pink { background: radial-gradient(circle at 30% 30%, #fd79a8, #e84393); }
+    .piece.cyan { background: radial-gradient(circle at 30% 30%, #81ecec, #00cec9); }
+    
+    .player-list {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
       margin-bottom: 20px;
     }
     
-    .rules h3 {
-      margin-bottom: 10px;
-      color: #856404;
+    .player-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9ecef;
     }
     
-    .rules ul {
-      padding-left: 20px;
-      color: #856404;
+    .player-item:last-child { border-bottom: none; }
+    
+    .player-order {
+      width: 24px;
+      height: 24px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 10px;
     }
     
-    .rules li {
-      margin-bottom: 6px;
+    .player-name { flex: 1; font-weight: 600; }
+    .player-color { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ddd; }
+    
+    .turn-indicator {
+      text-align: center;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-weight: bold;
     }
+    
+    .turn-indicator.waiting { background: #6c757d; }
+    
+    .chat-container {
+      height: 300px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .chat-message { margin-bottom: 8px; padding: 8px 12px; border-radius: 8px; background: white; }
+    .chat-message.system { background: #e9ecef; color: #666; font-size: 14px; text-align: center; }
+    
+    .chat-header { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .chat-color-dot { width: 12px; height: 12px; border-radius: 50%; }
+    
+    .chat-input { display: flex; gap: 8px; }
+    .chat-input input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+    .btn-chat { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; }
     
     .modal {
       display: none;
@@ -406,308 +241,122 @@
       z-index: 1000;
     }
     
-    .modal.active {
+    .modal-content { background: white; padding: 30px; border-radius: 16px; text-align: center; }
+    .modal-content h2 { margin-bottom: 20px; }
+    
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    .room-header {
       display: flex;
-    }
-    
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      text-align: center;
-    }
-    
-    .modal-content h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-    
-    .winner-color {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      margin: 0 auto 20px;
-    }
-    
-    /* 游戏界面新布局 */
-    .my-piece-info {
-      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .room-id-badge {
+      background: #667eea;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 18px;
+    }
+    
+    .my-piece-info {
+      text-align: center;
       padding: 12px;
       background: #f8f9fa;
       border-radius: 8px;
-      font-size: 16px;
+      margin-top: 16px;
     }
     
     .my-piece-color {
-      width: 28px;
-      height: 28px;
+      display: inline-block;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      border: 2px solid #ddd;
-    }
-    
-    .chat-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-weight: bold;
-    }
-    
-    .my-nickname-color {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid #ddd;
-    }
-    
-    /* 颜色选择器 */
-    .color-selector {
-      margin: 16px 0;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-    
-    .color-selector label {
-      display: block;
-      margin-bottom: 12px;
-      font-weight: bold;
-    }
-    
-    .color-options {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    
-    .color-option {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 3px solid transparent;
-      transition: all 0.2s;
-    }
-    
-    .color-option:hover {
-      transform: scale(1.1);
-    }
-    
-    .color-option.selected {
-      border-color: #667eea;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
-    }
-    
-    .color-option.taken {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    
-    .current-turn {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-    
-    .turn-indicator {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
+      vertical-align: middle;
+      margin: 0 8px;
       border: 2px solid #ddd;
     }
     
     @media (max-width: 900px) {
-      .container {
-        flex-direction: column;
-      }
-      .sidebar {
-        width: 100%;
-      }
-      .game-panel {
-        padding: 16px;
-      }
-      #gameBoard {
-        max-width: 500px;
-      }
-    }
-    
-    @media (min-width: 1200px) {
-      #gameBoard {
-        max-width: 700px;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      body {
-        padding: 10px;
-      }
-      h1 {
-        font-size: 20px;
-      }
-      .room-id {
-        font-size: 28px;
-        letter-spacing: 4px;
-      }
-      .btn {
-        padding: 12px;
-        font-size: 14px;
-      }
-      #gameBoard {
-        max-width: 100%;
-      }
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; max-height: none; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- 游戏目录页面 -->
-    <div id="homeScreen" class="screen active">
-      <div class="game-panel" style="text-align: center;">
-        <h1>🥚 金蛋的奇葩小游戏</h1>
-        <p style="color: #666; margin-bottom: 30px;">精选有趣的小游戏</p>
-        
-        <div class="game-card" onclick="enterGame('gomoku')" style="
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 16px;
-          padding: 30px;
-          color: white;
-          cursor: pointer;
-          margin-bottom: 20px;
-          transition: transform 0.2s;
-        ">
-          <div style="font-size: 48px; margin-bottom: 10px;">🎮</div>
-          <div style="font-size: 24px; font-weight: bold;">多人五子棋</div>
-          <div style="opacity: 0.8; margin-top: 8px;">2-10人在线对战</div>
-        </div>
-        
-        <div style="color: #999; font-size: 14px;">更多游戏开发中...</div>
-      </div>
-    </div>
-    
-    <!-- 多人五子棋主面板 -->
-    <div class="game-panel" id="gomokuPanel" style="display: none;">
-      <h1>🎮 多人五子棋</h1>
+    <div class="game-panel">
+      <h1>多人五子棋</h1>
       
       <!-- 主菜单 -->
       <div id="menuScreen" class="screen active">
         <div class="rules">
-          <h3>📖 游戏规则</h3>
+          <h3>游戏规则</h3>
           <ul>
-            <li>轮流下棋，最先连成5子获胜</li>
-            <li>支持2-10人同时游戏</li>
-            <li>支持实时聊天</li>
+            <li>3-10人轮流下棋</li>
+            <li>连成5子获胜</li>
+            <li>按加入顺序下棋</li>
+            <li>可以自由选择棋子颜色</li>
           </ul>
         </div>
+        
         <div class="form-group">
           <label>你的昵称</label>
-          <input type="text" id="playerName" placeholder="输入你的名字" maxlength="20">
+          <input type="text" id="playerName" placeholder="输入昵称" maxlength="20">
         </div>
-        <button class="btn btn-primary" onclick="createRoom()">🏠 创建房间</button>
-        <div style="text-align: center; margin: 16px 0; color: #999;">— 或 —</div>
-        <button class="btn btn-success" onclick="showRooms()">🚪 加入房间</button>
-      </div>
-      
-      <!-- 房间列表 -->
-      <div id="roomsScreen" class="screen">
-        <h2 style="margin-bottom: 16px;">可用房间</h2>
-        <div id="roomList" class="room-list"></div>
-        <button class="btn btn-warning" onclick="showMenu()" style="margin-top: 16px;">返回</button>
+        
+        <button class="btn btn-success" onclick="createRoom()">创建房间</button>
       </div>
       
       <!-- 等待房间 -->
-      <div id="waitingScreen" class="screen">
-        <div class="room-info">
-          <div style="text-align: center; color: #666;">房间号</div>
-          <div id="roomId" class="room-id">------</div>
+      <div id="roomScreen" class="screen">
+        <div class="room-header">
+          <span class="room-id-badge" id="roomIdDisplay">ROOM</span>
+          <button class="btn btn-warning" onclick="leaveCurrentRoom()" style="width: auto; padding: 8px 16px;">离开</button>
         </div>
         
-        <label>玩家列表</label>
-        <div id="playersList" class="players-list"></div>
-        
-        <div style="color: #666; text-align: center; margin: 20px 0;">
-          分享房间号给朋友，邀请他们加入！
+        <div class="player-list">
+          <h4 style="margin-bottom: 12px;">玩家列表 <span id="playerCount">(0/10)</span></h4>
+          <div id="playerList"></div>
         </div>
         
-        <button id="startBtn" class="btn btn-success" onclick="startGame()" disabled>
-          🚀 开始游戏 (至少2人)
-        </button>
-        
-        <!-- 颜色选择器 -->
-        <div id="colorSelector" class="color-selector">
-          <label>选择棋子颜色：</label>
-          <div class="color-options" id="colorOptions"></div>
+        <div class="rules">
+          <h4 style="margin-bottom: 12px;">选择你的棋子颜色</h4>
+          <div class="color-picker" id="colorPicker"></div>
         </div>
         
-        <button class="btn btn-warning" onclick="leaveCurrentRoom()">离开房间</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startGame()" disabled>开始游戏 (至少2人)</button>
       </div>
       
       <!-- 游戏界面 -->
       <div id="gameScreen" class="screen">
-        <!-- 顶部：当前回合 -->
-        <div id="currentTurn" class="current-turn">
-          <span class="turn-indicator" id="turnIndicator"></span>
-          <span id="turnText">等待开始...</span>
+        <div class="room-header">
+          <span class="room-id-badge" id="gameRoomIdDisplay">ROOM</span>
+          <div id="currentTurn" class="turn-indicator waiting">等待开始...</div>
         </div>
         
-        <!-- 棋盘 -->
-        <div id="gameBoard"></div>
+        <div class="game-board" id="gameBoard"></div>
         
-        <!-- 底部：我的棋子 -->
         <div id="myPieceInfo" class="my-piece-info">
           <span>你的棋子：</span>
           <span id="myPieceColor" class="my-piece-color"></span>
           <span id="myPieceName"></span>
         </div>
-        
-        <button class="btn btn-warning" onclick="leaveCurrentRoom()" style="margin-top: 16px;">离开房间</button>
       </div>
     </div>
     
+    <!-- 侧边栏 -->
     <div class="sidebar">
-      <div id="gameChat" style="display: none;">
-        <!-- 聊天头部：显示自己信息 -->
-        <div id="chatHeader" class="chat-header">
-          <span>👤 </span>
-          <span id="myNickname"></span>
-          <span id="myNicknameColor" class="my-nickname-color"></span>
-        </div>
-        <div class="chat-container">
-          <div id="chatMessages"></div>
-          <div class="chat-input">
-            <input type="text" id="chatInput" placeholder="输入消息..." maxlength="100" onkeypress="if(event.key==='Enter')sendChat()">
-            <button id="sendChat" class="btn btn-primary" onclick="sendChat()">发送</button>
-          </div>
-        </div>
-      </div>
-      
-      <div id="menuChat" style="display: none;">
-        <h3 style="margin-bottom: 16px;">💬 公共聊天</h3>
-        <div class="chat-container">
-          <div id="publicChatMessages"></div>
-          <div class="chat-input">
-            <input type="text" id="publicChatInput" placeholder="输入消息..." maxlength="100" onkeypress="if(event.key==='Enter')sendPublicChat()">
-            <button id="sendPublicChat" class="btn btn-primary" onclick="sendPublicChat()">发送</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 房间加入区 -->
-      <div id="roomJoinSection" style="margin-top: 20px;">
-        <h3 style="margin-bottom: 12px;">🚪 加入房间</h3>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <!-- 主页：房间列表 -->
+      <div id="homeSidebar">
+        <h3 style="margin-bottom: 16px;">加入房间</h3>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
           <input type="text" id="joinRoomInput" placeholder="输入房间号" maxlength="6" style="
             flex: 1;
             padding: 10px;
@@ -715,14 +364,25 @@
             border-radius: 8px;
             font-size: 16px;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            letter-spacing: 2px;
             text-align: center;
           ">
-          <button class="btn btn-success" onclick="joinByInput()" style="width: auto; padding: 10px 16px;">加入</button>
+          <button class="btn btn-primary" onclick="joinByInput()" style="width: auto; padding: 10px 16px;">加入</button>
         </div>
-        <div style="color: #999; font-size: 14px; margin-bottom: 12px;">— 或 —</div>
-        <div id="roomListSidebar" style="max-height: 200px; overflow-y: auto;">
+        
+        <h4 style="margin-bottom: 12px;">公开房间</h4>
+        <div id="roomList" class="room-list">
           <div style="text-align: center; color: #999; padding: 20px;">加载中...</div>
+        </div>
+      </div>
+      
+      <!-- 游戏内：聊天 -->
+      <div id="gameSidebar" style="display: none;">
+        <h3 style="margin-bottom: 16px;">聊天</h3>
+        <div class="chat-container" id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="输入消息..." maxlength="100" onkeypress="if(event.key==='Enter')sendChat()">
+          <button class="btn-chat" onclick="sendChat()">发送</button>
         </div>
       </div>
     </div>
@@ -731,7 +391,7 @@
   <!-- 获胜弹窗 -->
   <div id="winnerModal" class="modal">
     <div class="modal-content">
-      <h2>🎉 游戏结束！</h2>
+      <h2>游戏结束！</h2>
       <div id="winnerInfo"></div>
       <button class="btn btn-success" onclick="closeModal(); restartGame();" style="margin-top: 20px;">再来一局</button>
       <button class="btn btn-warning" onclick="closeModal()">返回房间</button>
@@ -739,13 +399,175 @@
   </div>
 
   <script>
-    let ws = null;
-    let playerId = null;
-    let roomOwnerId = null; // 房主ID
-    let currentRoom = null;
-    let players = [];
+    const PLAYER_ROLES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
+    const PLAYER_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
+    const PIECE_CLASSES = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
     
-    // 初始化棋盘
+    let ws = null;
+    let myOrderId = null;
+    let myColorId = null;
+    let ownerOrderId = null;
+    let currentRoomId = null;
+    let players = [];
+    let currentTurn = null;
+    
+    function connect() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(protocol + '//' + window.location.host);
+      
+      ws.onopen = () => {
+        refreshRoomList();
+      };
+      
+      ws.onmessage = (event) => {
+        handleMessage(JSON.parse(event.data));
+      };
+      
+      ws.onclose = () => {
+        setTimeout(connect, 3000);
+      };
+    }
+    
+    function safeSend(data) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+      }
+    }
+    
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'created':
+        case 'joined':
+          currentRoomId = msg.roomId;
+          myOrderId = msg.orderId;
+          myColorId = msg.colorId;
+          ownerOrderId = msg.ownerOrderId;
+          players = msg.players;
+          switchScreen('roomScreen');
+          document.getElementById('roomIdDisplay').textContent = msg.roomId;
+          document.getElementById('homeSidebar').style.display = 'none';
+          document.getElementById('gameSidebar').style.display = 'none';
+          updatePlayerList();
+          updateColorPicker();
+          refreshRoomList();
+          break;
+          
+        case 'playerJoined':
+        case 'playerLeft':
+        case 'colorChanged':
+          players = msg.players;
+          updatePlayerList();
+          updateColorPicker();
+          if (msg.type === 'playerLeft' && msg.playerName) {
+            addSystemMessage(msg.playerName + ' 离开了房间');
+          }
+          break;
+          
+        case 'gameStart':
+          switchScreen('gameScreen');
+          document.getElementById('gameRoomIdDisplay').textContent = currentRoomId;
+          document.getElementById('homeSidebar').style.display = 'none';
+          document.getElementById('gameSidebar').style.display = 'block';
+          initBoard();
+          currentTurn = 0;
+          updateGame();
+          addSystemMessage('游戏开始！按加入顺序下棋');
+          break;
+          
+        case 'move':
+          placePiece(msg.row, msg.col, msg.colorId);
+          currentTurn = msg.currentPlayer;
+          updateTurn();
+          if (msg.gameOver) {
+            showWinner(msg.winner);
+          }
+          break;
+          
+        case 'restart':
+          initBoard();
+          currentTurn = 0;
+          updateTurn();
+          addSystemMessage('游戏重新开始！');
+          break;
+          
+        case 'rooms':
+          renderRoomList(msg.rooms);
+          break;
+          
+        case 'chat':
+          addChatMessage(msg);
+          break;
+          
+        case 'error':
+          alert(msg.message);
+          break;
+      }
+    }
+    
+    function switchScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+    
+    function createRoom() {
+      const playerName = document.getElementById('playerName').value.trim() || '玩家1';
+      safeSend({ type: 'create', playerName });
+    }
+    
+    function joinRoom(roomId) {
+      const playerName = document.getElementById('playerName').value.trim() || '玩家' + Date.now() % 1000;
+      safeSend({ type: 'join', roomId, playerName });
+    }
+    
+    function joinByInput() {
+      const input = document.getElementById('joinRoomInput');
+      const roomId = input.value.trim().toUpperCase();
+      if (roomId.length < 4) {
+        alert('请输入正确的房间号');
+        return;
+      }
+      joinRoom(roomId);
+      input.value = '';
+    }
+    
+    function selectColor(colorId) {
+      if (players.some(p => p.colorId === colorId)) return;
+      safeSend({ type: 'selectColor', orderId: myOrderId, colorId });
+    }
+    
+    function updatePlayerList() {
+      document.getElementById('playerCount').textContent = '(' + players.length + '/10)';
+      const list = document.getElementById('playerList');
+      list.innerHTML = players.map((p, idx) => {
+        const isOwner = p.orderId === ownerOrderId;
+        const isMe = p.orderId === myOrderId;
+        return '<div class="player-item">' +
+          '<div class="player-order">' + (idx + 1) + '</div>' +
+          '<div class="player-name">' + p.name + (isOwner ? ' 👑' : '') + (isMe ? ' (你)' : '') + '</div>' +
+          '<div class="player-color" style="background:' + p.color + '"></div></div>';
+      }).join('');
+      
+      const startBtn = document.getElementById('startBtn');
+      startBtn.disabled = players.length < 2;
+      startBtn.textContent = players.length < 2 ? '开始游戏 (还需 ' + (2 - players.length) + ' 人)' : '开始游戏';
+    }
+    
+    function updateColorPicker() {
+      const takenColors = players.map(p => p.colorId);
+      const picker = document.getElementById('colorPicker');
+      picker.innerHTML = PIECE_CLASSES.map((cls, idx) => {
+        const isTaken = takenColors.includes(idx);
+        const isSelected = idx === myColorId;
+        const action = isTaken ? '' : 'onclick="selectColor(' + idx + ')"';
+        return '<div class="color-option ' + (isSelected ? 'selected' : '') + ' ' + (isTaken ? 'disabled' : '') + '" ' +
+          'style="background:' + PLAYER_COLORS[idx] + '" ' + action + '></div>';
+      }).join('');
+    }
+    
+    function startGame() {
+      safeSend({ type: 'start' });
+    }
+    
     function initBoard() {
       const board = document.getElementById('gameBoard');
       board.innerHTML = '';
@@ -761,548 +583,121 @@
       }
     }
     
-    // 连接WebSocket
-    function connect() {
-      // Railway需要明确的WebSocket路径
-      const host = window.location.host;
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${host}`;
-      
-      console.log('Connecting to:', wsUrl);
-      
-      ws = new WebSocket(wsUrl);
-      
-      // 超时保护
-      setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) {
-          console.error('WebSocket连接超时，状态:', ws.readyState);
-        }
-      }, 5000);
-      
-      ws.onopen = () => {
-        console.log('Connected to server');
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          handleMessage(msg);
-        } catch (e) {
-          console.error('消息解析错误:', e);
-        }
-      };
-      
-      ws.onclose = (e) => {
-        console.log('Disconnected from server', e.code, e.reason);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-    }
-    
-    // 安全发送WebSocket消息（等待连接建立）
-    function safeSend(data) {
-      if (!ws) {
-        console.error('WebSocket未初始化');
-        return;
-      }
-      
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(data));
-      } else if (ws.readyState === WebSocket.CONNECTING) {
-        // 如果正在连接，等待连接成功
-        const checkConnection = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            clearInterval(checkConnection);
-            ws.send(JSON.stringify(data));
-          }
-        }, 50);
-      } else {
-        console.error('WebSocket状态异常:', ws.readyState);
-      }
-    }
-    
-    // 处理服务器消息
-    function handleMessage(msg) {
-      switch (msg.type) {
-        case 'created':
-          playerId = msg.playerId;
-          roomOwnerId = msg.playerId; // 创建房间的人是房主
-          showWaiting(msg.roomId);
-          break;
-          
-        case 'joined':
-          playerId = msg.playerId;
-          roomOwnerId = msg.ownerId || null; // 从服务器获取房主ID
-          showWaiting(msg.roomId);
-          updatePlayersList(msg.players);
-          if (msg.reconnect) {
-            console.log('重连成功！');
-          }
-          break;
-          
-        case 'rooms':
-          showRoomList(msg.rooms);
-          break;
-          
-        case 'playerJoined':
-          updatePlayersList(msg.players);
-          break;
-          
-        case 'playerLeft':
-          // 直接更新玩家列表
-          if (msg.players) {
-            updatePlayersList(msg.players);
-          } else {
-            updatePlayersList([]);
-          }
-          if (msg.playerName) {
-            addSystemMessage(`${msg.playerName} 离开了房间`);
-          }
-          break;
-          
-        case 'gameEnd':
-          alert(`游戏结束: ${msg.reason}`);
-          showMenu();
-          break;
-          
-        case 'gameStart':
-          showGame();
-          updateTurn(msg.currentPlayer);
-          break;
-          
-        case 'move':
-          placePiece(msg.row, msg.col, msg.playerId);
-          if (msg.winner !== undefined) {
-            showWinner(msg.winner);
-          } else {
-            updateTurn(msg.currentPlayer);
-          }
-          break;
-          
-        case 'restart':
-          clearBoard();
-          break;
-          
-        case 'chat':
-          addChatMessage(msg.playerName, msg.message);
-          break;
-          
-        case 'colorChanged':
-          // 更新玩家列表和颜色选择器
-          updatePlayersList(msg.players);
-          highlightSelectedColor();
-          break;
-      }
-    }
-    
-    // 创建房间
-    function createRoom() {
-      const name = document.getElementById('playerName').value || `玩家${Date.now() % 1000}`;
-      safeSend({ type: 'create', playerName: name });
-    }
-    
-    // 加入房间
-    function joinRoom(roomId) {
-      const name = document.getElementById('playerName').value || `玩家${Date.now() % 1000}`;
-      safeSend({ type: 'join', roomId, playerName: name });
-    }
-    
-    // 显示房间列表
-    function showRooms() {
-      safeSend({ type: 'getRooms' });
-      switchScreen('roomsScreen');
-    }
-    
-    function showRoomList(rooms) {
-      const list = document.getElementById('roomList');
-      if (rooms.length === 0) {
-        list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无房间，创建一个新房间吧！</div>';
-        return;
-      }
-      list.innerHTML = rooms.map(r => `
-        <div class="room-item" onclick="joinRoom('${r.id}')">
-          <div>
-            <div style="font-weight: bold; letter-spacing: 4px;">${r.id}</div>
-            <div class="players">${r.playerCount}/10 玩家</div>
-          </div>
-          <button class="btn btn-primary" style="width: auto; padding: 8px 16px;">加入</button>
-        </div>
-      `).join('');
-    }
-    
-    // 显示等待界面
-    function showWaiting(roomId) {
-      currentRoom = roomId;
-      document.getElementById('roomId').textContent = roomId;
-      switchScreen('waitingScreen');
-      initColorSelector();
-      
-      // 控制开始按钮显示
-      const startBtn = document.getElementById('startBtn');
-      if (playerId === roomOwnerId) {
-        startBtn.style.display = 'block';
-        startBtn.disabled = true; // 等其他人加入
-      } else {
-        startBtn.style.display = 'none';
-      }
-    }
-    
-    // 初始化颜色选择器
-    function initColorSelector() {
-      const colors = [
-        { id: 0, color: '#000000', name: '黑棋', class: 'black' },
-        { id: 1, color: '#FFFFFF', name: '白棋', class: 'white' },
-        { id: 2, color: '#FF0000', name: '红棋', class: 'red' },
-        { id: 3, color: '#0984e3', name: '蓝棋', class: 'blue' },
-        { id: 4, color: '#00b894', name: '绿棋', class: 'green' },
-        { id: 5, color: '#fdcb6e', name: '黄棋', class: 'yellow' },
-        { id: 6, color: '#6c5ce7', name: '紫棋', class: 'purple' },
-        { id: 7, color: '#e17055', name: '橙棋', class: 'orange' },
-        { id: 8, color: '#e84393', name: '粉棋', class: 'pink' },
-        { id: 9, color: '#00cec9', name: '青棋', class: 'cyan' }
-      ];
-      
-      const container = document.getElementById('colorOptions');
-      container.innerHTML = colors.map(c => `
-        <div class="color-option" 
-             style="background: ${c.color}" 
-             data-color-id="${c.id}"
-             onclick="selectColor(${c.id})"
-             title="${c.name}"></div>
-      `).join('');
-      
-      // 高亮当前选择的颜色
-      highlightSelectedColor();
-    }
-    
-    // 高亮当前选择的颜色
-    function highlightSelectedColor() {
-      document.querySelectorAll('.color-option').forEach(el => {
-        el.classList.remove('selected');
-        const colorId = parseInt(el.dataset.colorId);
-        if (colorId === playerId) {
-          el.classList.add('selected');
-        }
-      });
-    }
-    
-    // 选择颜色
-    function selectColor(colorId) {
-      // 检查颜色是否已被占用
-      const takenColors = players.map(p => p.id);
-      if (takenColors.includes(colorId)) {
-        return; // 颜色已被占用
-      }
-      
-      // 更新UI高亮
-      document.querySelectorAll('.color-option').forEach(el => {
-        el.classList.remove('selected');
-        const elColorId = parseInt(el.dataset.colorId);
-        if (elColorId === colorId) {
-          el.classList.add('selected');
-        }
-      });
-      
-      // 发送选择颜色消息
-      safeSend({ type: 'selectColor', colorId, playerId });
-    }
-    
-    // 更新玩家列表
-    function updatePlayersList(list) {
-      players = list;
-      const container = document.getElementById('playersList');
-      const colorNames = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
-      
-      container.innerHTML = list.map((p, i) => `
-        <div class="player-item ${p.id === playerId ? 'current' : ''}">
-          <div class="player-color" style="background: ${p.color || getPlayerColor(p.id)}"></div>
-          <div class="player-info">
-            <div class="player-nickname">👤 ${p.name}</div>
-            <div class="player-role">${p.id === playerId ? '✅ 你是' : ''}${colorNames[p.id]}</div>
-          </div>
-        </div>
-      `).join('');
-      
-      // 更新开始按钮状态（只有房主能看到）
-      const startBtn = document.getElementById('startBtn');
-      if (startBtn) {
-        const activePlayers = list.filter(p => p.ws !== null).length;
-        if (playerId === roomOwnerId) {
-          startBtn.style.display = 'block';
-          startBtn.disabled = activePlayers < 2;
-          startBtn.textContent = `🚀 开始游戏 (${activePlayers}/2-10人)`;
-        } else {
-          startBtn.style.display = 'none';
-        }
-      }
-    }
-    
-    // 开始游戏
-    function startGame() {
-      safeSend({ type: 'start' });
-    }
-    
-    // 显示游戏界面
-    function showGame() {
-      initBoard();
-      switchScreen('gameScreen');
-      document.getElementById('gameChat').style.display = 'block';
-      document.getElementById('menuChat').style.display = 'none';
-      
-      // 更新我的棋子信息
-      updateMyPieceInfo();
-      
-      // 更新聊天头部
-      updateChatHeader();
-    }
-    
-    // 获取颜色
-    const ALL_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
-    const ALL_COLOR_NAMES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
-    const ALL_COLOR_CLASSES = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
-    
-    function getPlayerColor(id) {
-      return ALL_COLORS[id] || '#000000';
-    }
-    
-    function getPlayerName(id) {
-      return ALL_COLOR_NAMES[id] || '未知';
-    }
-    
-    // 更新我的棋子信息
-    function updateMyPieceInfo() {
-      const pieceInfo = document.getElementById('myPieceInfo');
-      const pieceColor = document.getElementById('myPieceColor');
-      const pieceName = document.getElementById('myPieceName');
-      
-      const myPlayer = players.find(p => p.id === playerId);
-      if (myPlayer) {
-        pieceColor.style.background = getPlayerColor(myPlayer.id);
-        pieceName.textContent = getPlayerName(myPlayer.id);
-      }
-    }
-    
-    // 更新聊天头部
-    function updateChatHeader() {
-      const nickname = document.getElementById('myNickname');
-      const nicknameColor = document.getElementById('myNicknameColor');
-      
-      const myPlayer = players.find(p => p.id === playerId);
-      if (myPlayer) {
-        nickname.textContent = myPlayer.name;
-        nicknameColor.style.background = getPlayerColor(myPlayer.id);
-      }
-    }
-    
-    // 下棋
     function makeMove(row, col) {
-      safeSend({ type: 'move', row, col, playerId });
+      if (myOrderId !== currentTurn) return;
+      const cell = document.querySelector('.cell[data-row="' + row + '"][data-col="' + col + '"]');
+      if (cell && cell.querySelector('.piece')) return;
+      safeSend({ type: 'move', orderId: myOrderId, row, col });
     }
     
-    // 放置棋子
-    function placePiece(row, col, player) {
-      const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-      const piece = document.createElement('div');
-      piece.className = 'piece';
-      
-      const colorClasses = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
-      piece.classList.add(colorClasses[player]);
-      cell.appendChild(piece);
-    }
-    
-    // 更新当前回合
-    function updateTurn(player) {
-      const indicator = document.getElementById('turnIndicator');
-      const text = document.getElementById('turnText');
-      
-      // 查找当前玩家昵称
-      const currentPlayerInfo = players.find(p => p.id === player);
-      const playerName = currentPlayerInfo ? currentPlayerInfo.name : '未知';
-      
-      indicator.style.background = getPlayerColor(player);
-      text.textContent = `🎯 现在是 ${getPlayerName(player)} (${playerName}) 落子`;
-      
-      const turnDiv = document.getElementById('currentTurn');
-      if (player === 1) {
-        turnDiv.style.background = '#f0f0f0';
-        turnDiv.style.color = '#333';
-      } else {
-        turnDiv.style.background = '#333';
-        turnDiv.style.color = '#fff';
+    function placePiece(row, col, colorId) {
+      const cell = document.querySelector('.cell[data-row="' + row + '"][data-col="' + col + '"]');
+      if (cell && !cell.querySelector('.piece')) {
+        const piece = document.createElement('div');
+        piece.className = 'piece ' + PIECE_CLASSES[colorId];
+        cell.appendChild(piece);
       }
     }
     
-    // 显示获胜者
-    function showWinner(winner) {
-      const colors = ['黑棋', '白棋', '红棋'];
-      const modal = document.getElementById('winnerModal');
-      const info = document.getElementById('winnerInfo');
+    function updateGame() {
+      const me = players.find(p => p.orderId === myOrderId);
+      if (me) {
+        document.getElementById('myPieceColor').style.background = me.color;
+        document.getElementById('myPieceName').textContent = me.role;
+      }
+      updateTurn();
+    }
+    
+    function updateTurn() {
+      const turnIndicator = document.getElementById('currentTurn');
+      const player = players.find(p => p.orderId === currentTurn);
       
-      info.innerHTML = `
-        <div class="winner-color" style="background: radial-gradient(circle at 30% 30%, ${winner === 0 ? '#555,#000' : winner === 1 ? '#fff,#ccc' : '#ff6b6b,#c0392b'})"></div>
-        <p style="font-size: 24px; font-weight: bold;">${colors[winner]} 获胜！</p>
-      `;
-      modal.classList.add('active');
+      if (player) {
+        const isMyTurn = player.orderId === myOrderId;
+        turnIndicator.className = isMyTurn ? 'turn-indicator' : 'turn-indicator waiting';
+        turnIndicator.innerHTML = isMyTurn 
+          ? '轮到你了！(' + player.role + ')'
+          : '等待 ' + player.name + ' 下棋 (' + player.role + ')';
+      }
     }
     
-    // 关闭弹窗
-    function closeModal() {
-      document.getElementById('winnerModal').classList.remove('active');
+    function showWinner(winnerOrderId) {
+      const winner = players.find(p => p.orderId === winnerOrderId);
+      const isMe = winnerOrderId === myOrderId;
+      document.getElementById('winnerInfo').innerHTML = '<p style="font-size:24px;margin-bottom:10px;">🏆 ' + (winner ? winner.name : '未知') + ' 获胜！</p><p>(' + (winner ? winner.role : '') + ')</p>';
+      document.getElementById('winnerModal').style.display = 'flex';
     }
     
-    // 重新开始
     function restartGame() {
+      closeModal();
       safeSend({ type: 'restart' });
     }
     
-    // 清除棋盘
-    function clearBoard() {
-      const cells = document.querySelectorAll('.cell');
-      cells.forEach(cell => {
-        cell.innerHTML = '';
-      });
+    function closeModal() {
+      document.getElementById('winnerModal').style.display = 'none';
     }
     
-    // 聊天
-    function sendChat() {
-      const input = document.getElementById('chatInput');
-      const message = input.value.trim();
-      if (message) {
-        safeSend({ type: 'chat', message });
-        input.value = '';
-      }
-    }
-    
-    function addChatMessage(sender, message) {
-      const container = document.getElementById('chatMessages');
-      const msg = document.createElement('div');
-      msg.className = 'chat-message';
-      msg.innerHTML = `<span class="sender">${sender}:</span>${message}`;
-      container.appendChild(msg);
-      container.scrollTop = container.scrollHeight;
-    }
-    
-    function sendPublicChat() {
-      // 公共聊天功能可以在未来添加
-    }
-    
-    // 离开房间
-    function leaveRoom() {
-      location.reload();
-    }
-    
-    // 返回菜单
-    function showMenu() {
-      switchScreen('menuScreen');
-      document.getElementById('gameChat').style.display = 'none';
-      document.getElementById('menuChat').style.display = 'none';
-    }
-    
-    // 进入游戏
-    function enterGame(game) {
-      if (game === 'gomoku') {
-        document.getElementById('homeScreen').classList.remove('active');
-        document.getElementById('gomokuPanel').style.display = 'block';
-      }
-    }
-    
-    // 返回主页
-    function goBackHome() {
-      document.getElementById('homeScreen').classList.add('active');
-      document.getElementById('gomokuPanel').style.display = 'none';
-      // 重置状态
-      players = [];
-      playerId = null;
-      currentRoom = null;
-    }
-    
-    // 离开当前房间
     function leaveCurrentRoom() {
-      // 发送离开消息到服务器
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'leave' }));
       }
-      // 重置本地状态
+      currentRoomId = null;
+      myOrderId = null;
       players = [];
-      playerId = null;
-      currentRoom = null;
-      showMenu();
+      switchScreen('menuScreen');
+      document.getElementById('homeSidebar').style.display = 'block';
+      document.getElementById('gameSidebar').style.display = 'none';
+      refreshRoomList();
     }
     
-    // 离开房间（刷新页面）
-    function leaveRoom() {
-      location.reload();
-    }
-    
-    // 添加系统消息
-    function addSystemMessage(message) {
-      const container = document.getElementById('chatMessages');
-      const msg = document.createElement('div');
-      msg.className = 'chat-message system';
-      msg.style.color = '#999';
-      msg.textContent = message;
-      container.appendChild(msg);
-      container.scrollTop = container.scrollHeight;
-    }
-    
-    // 切换屏幕
-    function switchScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-    }
-    
-    // 刷新侧边栏房间列表
     function refreshRoomList() {
       safeSend({ type: 'getRooms' });
     }
     
-    // 通过输入房间号加入
-    function joinByInput() {
-      const input = document.getElementById('joinRoomInput');
-      const roomId = input.value.trim().toUpperCase();
-      if (roomId.length < 4) {
-        alert('请输入正确的房间号（至少4位）');
+    function renderRoomList(rooms) {
+      const list = document.getElementById('roomList');
+      if (!rooms || rooms.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无房间</div>';
         return;
       }
-      joinRoom(roomId);
+      list.innerHTML = rooms.map(r => 
+        '<div class="room-item" onclick="joinRoom(\'' + r.id + '\')">' +
+          '<div><div class="room-id">' + r.id + '</div><div class="room-count">' + r.playerCount + ' 人</div></div>' +
+          '<button class="join-btn-small">加入</button></div>'
+      ).join('');
+    }
+    
+    function sendChat() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message) return;
+      safeSend({ type: 'chat', message });
       input.value = '';
     }
     
-    // 渲染侧边栏房间列表
-    function renderSidebarRoomList(rooms) {
-      const container = document.getElementById('roomListSidebar');
-      if (!rooms || rooms.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #999; padding: 10px;">暂无房间</div>';
-        return;
-      }
-      container.innerHTML = rooms.map(r => `
-        <div class="room-item" onclick="joinRoom('${r.id}')" style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px;
-          background: #f8f9fa;
-          border-radius: 8px;
-          margin-bottom: 8px;
-          cursor: pointer;
-        ">
-          <div>
-            <div style="font-weight: bold; letter-spacing: 2px;">${r.id}</div>
-            <div style="font-size: 12px; color: #666;">${r.playerCount}/10 人</div>
-          </div>
-          <button class="btn btn-primary" style="width: auto; padding: 4px 12px; font-size: 12px;">加入</button>
-        </div>
-      `).join('');
+    function addChatMessage(msg) {
+      const container = document.getElementById('chatMessages');
+      const player = players.find(p => p.orderId === msg.orderId);
+      const div = document.createElement('div');
+      div.className = 'chat-message';
+      div.innerHTML = '<div class="chat-header"><span class="chat-color-dot" style="background:' + (player ? player.color : '#999') + '"></span><span>' + (msg.playerName || '玩家') + '</span></div><div>' + msg.message + '</div>';
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
     }
     
-    // 页面加载
-    window.onload = () => {
+    function addSystemMessage(message) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'chat-message system';
+      div.textContent = message;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    window.onload = function() {
       connect();
       initBoard();
-      // 启动房间列表定时刷新
-      setInterval(refreshRoomList, 10000); // 每10秒刷新一次
+      setInterval(refreshRoomList, 10000);
     };
   </script>
 </body>
