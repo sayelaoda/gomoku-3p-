@@ -163,24 +163,27 @@ wss.on('connection', (ws) => {
         const existingPlayer = room.players.find(p => p.name === msg.playerName && (!p.ws || p.ws.readyState !== WebSocket.OPEN));
         
         if (existingPlayer) {
+          // 恢复重连
           existingPlayer.ws = ws;
-          // 重连时保持当前isOwner状态不变（房主转让在离线时已处理）
+          existingPlayer.isOwner = false; // 不再是房主
           currentRoom = room;
           playerInfo = existingPlayer;
+          
+          const currentOwnerOrderId = getOwnerOrderId(room);
           
           safeSend(ws, { 
             type: 'joined', 
             roomId: room.id, 
             orderId: existingPlayer.orderId,
             colorId: existingPlayer.colorId,
-            ownerOrderId: getOwnerOrderId(room),
+            ownerOrderId: currentOwnerOrderId,
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           });
           
           broadcast(room, {
             type: 'playerReconnected',
             playerName: existingPlayer.name,
-            ownerOrderId: getOwnerOrderId(room),
+            ownerOrderId: currentOwnerOrderId,
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           }, ws);
           return;
@@ -427,8 +430,7 @@ wss.on('connection', (ws) => {
         player.ws = null;
         
         if (currentRoom.gameStarted) {
-          player.ws = null;
-          
+          // 游戏已开始，设为离线
           broadcast(currentRoom, {
             type: 'playerOffline',
             playerName: playerName,
@@ -440,7 +442,7 @@ wss.on('connection', (ws) => {
           currentRoom.lastActivity = Date.now();
           
           if (wasOwner) {
-            player.isOwner = false; // 先把离线的房主设为false
+            player.isOwner = false;
             const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
             if (onlinePlayers.length > 0) {
               currentRoom.players.forEach(p => p.isOwner = false);
@@ -465,6 +467,7 @@ wss.on('connection', (ws) => {
             }
           }
         } else {
+          // 游戏未开始，直接移除玩家
           const idx = currentRoom.players.indexOf(player);
           if (idx > -1) {
             currentRoom.players.splice(idx, 1);
@@ -473,6 +476,8 @@ wss.on('connection', (ws) => {
               rooms.delete(currentRoom.id);
             } else {
               if (wasOwner) {
+                // 清除所有isOwner，再设置新房主
+                currentRoom.players.forEach(p => p.isOwner = false);
                 currentRoom.players[0].isOwner = true;
                 broadcast(currentRoom, {
                   type: 'ownerChanged',
@@ -558,6 +563,8 @@ wss.on('connection', (ws) => {
           rooms.delete(currentRoom.id);
         } else {
           if (wasOwner) {
+            // 先清除所有isOwner，再设置新房主
+            currentRoom.players.forEach(p => p.isOwner = false);
             currentRoom.players[0].isOwner = true;
             broadcast(currentRoom, {
               type: 'ownerChanged',
