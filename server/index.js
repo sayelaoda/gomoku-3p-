@@ -414,24 +414,19 @@ wss.on('connection', (ws) => {
           
           // 如果是房主离线，转移房主
           if (wasOwner) {
-            // 找到下一个在线玩家作为新房主
             const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
             if (onlinePlayers.length > 0) {
               // 转移房主标识
               currentRoom.players.forEach(p => p.isOwner = false);
               onlinePlayers[0].isOwner = true;
               
+              // 通知所有玩家房主变更，并让新房主显示确认弹窗
               broadcast(currentRoom, {
                 type: 'ownerChanged',
                 newOwnerOrderId: onlinePlayers[0].orderId,
-                newOwnerName: onlinePlayers[0].name
-              });
-              
-              // 通知新房主做决定
-              safeSend(onlinePlayers[0].ws, {
-                type: 'ownerConfirm',
-                playerName: playerName,
-                orderId: playerOrderId
+                newOwnerName: onlinePlayers[0].name,
+                offlinePlayerName: playerName,
+                offlineOrderId: playerOrderId
               });
             }
           } else {
@@ -454,21 +449,25 @@ wss.on('connection', (ws) => {
             if (currentRoom.players.length === 0) {
               rooms.delete(currentRoom.id);
             } else {
-              // 如果移除的是房主，转移房主
+              // 如果移除的是房主，先更新房主标识
               if (wasOwner) {
                 currentRoom.players[0].isOwner = true;
+              }
+              
+              broadcast(currentRoom, {
+                type: 'playerLeft',
+                playerName: playerName,
+                ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId,
+                players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+              });
+              
+              if (wasOwner) {
                 broadcast(currentRoom, {
                   type: 'ownerChanged',
                   newOwnerOrderId: currentRoom.players[0].orderId,
                   newOwnerName: currentRoom.players[0].name
                 });
               }
-              
-              broadcast(currentRoom, {
-                type: 'playerLeft',
-                playerName: playerName,
-                players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
-              });
             }
           }
         }
@@ -515,13 +514,9 @@ wss.on('connection', (ws) => {
           broadcast(currentRoom, {
             type: 'ownerChanged',
             newOwnerOrderId: onlinePlayers[0].orderId,
-            newOwnerName: onlinePlayers[0].name
-          });
-          
-          safeSend(onlinePlayers[0].ws, {
-            type: 'ownerConfirm',
-            playerName: playerName,
-            orderId: playerOrderId
+            newOwnerName: onlinePlayers[0].name,
+            offlinePlayerName: playerName,
+            offlineOrderId: playerOrderId
           });
         }
       } else {
@@ -555,6 +550,7 @@ wss.on('connection', (ws) => {
           broadcast(currentRoom, {
             type: 'playerLeft',
             playerName: playerName,
+            ownerOrderId: currentRoom.players.find(p => p.isOwner)?.orderId,
             players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
           });
         }

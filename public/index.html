@@ -403,7 +403,9 @@
           
         case 'playerLeft':
           players = msg.players;
-          // 不更新ownerOrderId，等待ownerChanged消息
+          if (msg.ownerOrderId !== undefined) {
+            ownerOrderId = msg.ownerOrderId;
+          }
           updatePlayerList();
           updateColorPicker();
           addSystemMessage(msg.playerName + ' 离开了房间');
@@ -419,6 +421,13 @@
           ownerOrderId = msg.newOwnerOrderId;
           addSystemMessage('新房主: ' + msg.newOwnerName);
           updatePlayerList();
+          
+          // 如果有离线信息，新房主显示确认弹窗
+          if (msg.offlinePlayerName && myOrderId === ownerOrderId) {
+            pendingOfflineOrderId = msg.offlineOrderId;
+            document.getElementById('ownerConfirmMsg').textContent = '玩家 ' + msg.offlinePlayerName + ' 离线了，是否等待重连？';
+            document.getElementById('ownerConfirmModal').style.display = 'flex';
+          }
           break;
           
         case 'gameStart':
@@ -454,14 +463,14 @@
           break;
           
         case 'ownerConfirm':
-          // 只有当前房主收到弹窗
+          // 保留作为后备：非房主离线时的处理
           if (myOrderId === ownerOrderId) {
             pendingOfflineOrderId = msg.orderId;
             document.getElementById('ownerConfirmMsg').textContent = '玩家 ' + msg.playerName + ' 离线了，是否等待重连？';
             document.getElementById('ownerConfirmModal').style.display = 'flex';
           }
           break;
-          
+        
         case 'playerReconnected':
           waitingReconnect = false;
           pendingOfflineOrderId = null;
@@ -686,6 +695,10 @@
         turnIndicator.innerHTML = isMyTurn 
           ? '轮到你了！(' + player.role + ')'
           : '等待 ' + player.name + ' 下棋 (' + player.role + ')';
+      } else {
+        // 如果找不到玩家，显示默认信息
+        turnIndicator.className = 'turn-indicator waiting';
+        turnIndicator.innerHTML = '等待游戏中...';
       }
     }
     
