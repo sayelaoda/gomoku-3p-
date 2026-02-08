@@ -573,16 +573,44 @@
 </head>
 <body>
   <div class="container">
-    <div class="game-panel">
-      <h1>🎮 三人五子棋</h1>
+    <!-- 游戏目录页面 -->
+    <div id="homeScreen" class="screen active">
+      <div class="game-panel" style="text-align: center;">
+        <h1>🥚 金蛋的奇葩小游戏</h1>
+        <p style="color: #666; margin-bottom: 30px;">精选有趣的小游戏</p>
+        
+        <div class="game-card" onclick="enterGame('gomoku')" style="
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 16px;
+          padding: 30px;
+          color: white;
+          cursor: pointer;
+          margin-bottom: 20px;
+          transition: transform 0.2s;
+        ">
+          <div style="font-size: 48px; margin-bottom: 10px;">🎮</div>
+          <div style="font-size: 24px; font-weight: bold;">多人五子棋</div>
+          <div style="opacity: 0.8; margin-top: 8px;">2-10人在线对战</div>
+        </div>
+        
+        <div style="color: #999; font-size: 14px;">更多游戏开发中...</div>
+      </div>
+    </div>
+    
+    <!-- 多人五子棋主面板 -->
+    <div class="game-panel" id="gomokuPanel" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0;">🎮 多人五子棋</h1>
+        <button class="btn btn-warning" onclick="goBackHome()" style="width: auto; padding: 8px 16px;">🏠 返回主页</button>
+      </div>
       
       <!-- 主菜单 -->
       <div id="menuScreen" class="screen active">
         <div class="rules">
           <h3>📖 游戏规则</h3>
           <ul>
-            <li>三人轮流下棋：黑棋 → 白棋 → 红棋</li>
-            <li>最先连成5子获胜</li>
+            <li>轮流下棋，最先连成5子获胜</li>
+            <li>支持2-10人同时游戏</li>
             <li>支持实时聊天</li>
           </ul>
         </div>
@@ -626,7 +654,7 @@
           <div class="color-options" id="colorOptions"></div>
         </div>
         
-        <button class="btn btn-warning" onclick="leaveRoom()">离开房间</button>
+        <button class="btn btn-warning" onclick="leaveCurrentRoom()">离开房间</button>
       </div>
       
       <!-- 游戏界面 -->
@@ -646,6 +674,8 @@
           <span id="myPieceColor" class="my-piece-color"></span>
           <span id="myPieceName"></span>
         </div>
+        
+        <button class="btn btn-warning" onclick="leaveCurrentRoom()" style="margin-top: 16px;">离开房间</button>
       </div>
     </div>
     
@@ -806,9 +836,14 @@
           break;
           
         case 'playerLeft':
-          updatePlayersList(msg.players);
+          // 直接更新玩家列表
+          if (msg.players) {
+            updatePlayersList(msg.players);
+          } else {
+            updatePlayersList([]);
+          }
           if (msg.playerName) {
-            alert(`${msg.playerName} 离开了房间`);
+            addSystemMessage(`${msg.playerName} 离开了房间`);
           }
           break;
           
@@ -1148,6 +1183,53 @@
       switchScreen('menuScreen');
       document.getElementById('gameChat').style.display = 'none';
       document.getElementById('menuChat').style.display = 'none';
+    }
+    
+    // 进入游戏
+    function enterGame(game) {
+      if (game === 'gomoku') {
+        document.getElementById('homeScreen').classList.remove('active');
+        document.getElementById('gomokuPanel').style.display = 'block';
+      }
+    }
+    
+    // 返回主页
+    function goBackHome() {
+      document.getElementById('homeScreen').classList.add('active');
+      document.getElementById('gomokuPanel').style.display = 'none';
+      // 重置状态
+      players = [];
+      playerId = null;
+      currentRoom = null;
+    }
+    
+    // 离开当前房间
+    function leaveCurrentRoom() {
+      // 发送离开消息到服务器
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'leave' }));
+      }
+      // 重置本地状态
+      players = [];
+      playerId = null;
+      currentRoom = null;
+      showMenu();
+    }
+    
+    // 离开房间（刷新页面）
+    function leaveRoom() {
+      location.reload();
+    }
+    
+    // 添加系统消息
+    function addSystemMessage(message) {
+      const container = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = 'chat-message system';
+      msg.style.color = '#999';
+      msg.textContent = message;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
     }
     
     // 切换屏幕

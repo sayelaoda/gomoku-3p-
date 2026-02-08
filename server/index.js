@@ -327,6 +327,32 @@ wss.on('connection', (ws) => {
         safeSend(ws, { type: 'rooms', rooms: roomList });
         break;
       }
+      
+      case 'leave': {
+        // 玩家主动离开房间
+        if (currentRoom) {
+          const playerIndex = currentRoom.players.findIndex(p => p.ws === ws);
+          if (playerIndex !== -1) {
+            const playerName = currentRoom.players[playerIndex].name;
+            
+            // 移除玩家
+            currentRoom.players.splice(playerIndex, 1);
+            
+            // 如果没有玩家了，删除房间
+            if (currentRoom.players.length === 0) {
+              rooms.delete(currentRoom.id);
+            } else {
+              // 通知其他玩家
+              broadcast(currentRoom, {
+                type: 'playerLeft',
+                playerName: playerName,
+                players: currentRoom.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
+              });
+            }
+          }
+        }
+        break;
+      }
     }
   });
 
@@ -340,34 +366,26 @@ wss.on('connection', (ws) => {
         // 移除玩家
         currentRoom.players.splice(playerIndex, 1);
         
-        // 通知其他玩家
-        broadcast(currentRoom, {
-          type: 'playerLeft',
-          playerId: playerIndex,
-          playerName: playerName,
-          remainingPlayers: currentRoom.players.length
-        });
-        
-        // 如果游戏已开始且有人离开，游戏结束
-        if (wasGameStarted && currentRoom.gameStarted) {
-          currentRoom.gameStarted = false;
-          currentRoom.winner = null;
-          broadcast(currentRoom, {
-            type: 'gameEnd',
-            reason: `${playerName} 离开了游戏`
-          });
-        }
-        
         // 如果没有玩家了，删除房间
         if (currentRoom.players.length === 0) {
           rooms.delete(currentRoom.id);
         } else {
-          // 重新分配玩家ID（保持连续性）
-          currentRoom.players.forEach((p, i) => {
-            p.id = i;
-            p.role = PLAYERS[i];
-            p.color = COLORS[i];
+          // 通知其他玩家（发送完整玩家列表）
+          broadcast(currentRoom, {
+            type: 'playerLeft',
+            playerName: playerName,
+            players: currentRoom.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
           });
+          
+          // 如果游戏已开始且有人离开，游戏结束
+          if (wasGameStarted && currentRoom.gameStarted) {
+            currentRoom.gameStarted = false;
+            currentRoom.winner = null;
+            broadcast(currentRoom, {
+              type: 'gameEnd',
+              reason: `${playerName} 离开了游戏`
+            });
+          }
         }
       }
     }
