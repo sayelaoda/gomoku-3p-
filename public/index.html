@@ -331,7 +331,7 @@
           <div class="color-picker" id="colorPicker"></div>
         </div>
         
-        <button class="btn btn-primary" id="startBtn" onclick="startGame()" disabled>开始游戏 (至少2人)</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startGame()" disabled style="display:none;">开始游戏</button>
       </div>
       
       <!-- 游戏界面 -->
@@ -348,6 +348,8 @@
           <span id="myPieceColor" class="my-piece-color"></span>
           <span id="myPieceName"></span>
         </div>
+        
+        <button class="btn btn-warning" onclick="leaveGameToHome()" style="margin-top: 16px;">返回主页</button>
       </div>
     </div>
     
@@ -454,12 +456,18 @@
           
         case 'playerJoined':
         case 'playerLeft':
+        case 'playerOffline':
+        case 'playerRejoined':
         case 'colorChanged':
           players = msg.players;
           updatePlayerList();
           updateColorPicker();
           if (msg.type === 'playerLeft' && msg.playerName) {
             addSystemMessage(msg.playerName + ' 离开了房间');
+          } else if (msg.type === 'playerOffline' && msg.playerName) {
+            addSystemMessage(msg.playerName + ' 离线了');
+          } else if (msg.type === 'playerRejoined' && msg.playerName) {
+            addSystemMessage(msg.playerName + ' 重新连接了');
           }
           break;
           
@@ -475,10 +483,18 @@
           break;
           
         case 'move':
-          placePiece(msg.row, msg.col, msg.colorId);
-          currentTurn = msg.currentPlayer;
+        case 'playerSkipped':
+          if (msg.type === 'playerSkipped') {
+            if (msg.playerName) {
+              addSystemMessage(msg.playerName + ' 离线了，跳过回合');
+            }
+            currentTurn = msg.currentPlayer;
+          } else {
+            placePiece(msg.row, msg.col, msg.colorId);
+            currentTurn = msg.currentPlayer;
+          }
           updateTurn();
-          if (msg.gameOver) {
+          if (msg.type === 'move' && msg.gameOver) {
             showWinner(msg.winner);
           }
           break;
@@ -547,9 +563,15 @@
           '<div class="player-color" style="background:' + p.color + '"></div></div>';
       }).join('');
       
+      // 只有房主能看到开始按钮
       const startBtn = document.getElementById('startBtn');
-      startBtn.disabled = players.length < 2;
-      startBtn.textContent = players.length < 2 ? '开始游戏 (还需 ' + (2 - players.length) + ' 人)' : '开始游戏';
+      if (myOrderId === ownerOrderId) {
+        startBtn.style.display = 'block';
+        startBtn.disabled = players.length < 2;
+        startBtn.textContent = players.length < 2 ? '开始游戏 (还需 ' + (2 - players.length) + ' 人)' : '开始游戏';
+      } else {
+        startBtn.style.display = 'none';
+      }
     }
     
     function updateColorPicker() {
@@ -650,6 +672,17 @@
       refreshRoomList();
     }
     
+    // 游戏内直接返回主页（不发送leave消息）
+    function leaveGameToHome() {
+      currentRoomId = null;
+      myOrderId = null;
+      players = [];
+      switchScreen('menuScreen');
+      document.getElementById('homeSidebar').style.display = 'block';
+      document.getElementById('gameSidebar').style.display = 'none';
+      refreshRoomList();
+    }
+    
     function refreshRoomList() {
       safeSend({ type: 'getRooms' });
     }
@@ -694,10 +727,75 @@
       container.scrollTop = container.scrollHeight;
     }
     
+    // 检测页面可见性变化
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        // 页面回到前台，检查连接状态
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          reconnect();
+        } else {
+          // 发送心跳
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }
+    }
+    
+    // 重连函数
+    function reconnect() {
+      if (ws) {
+        ws.close();
+      }
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(protocol + '//' + window.location.host);
+      
+      ws.onopen = () => {
+        console.log('Reconnected');
+        // 如果在房间中，尝试重新加入
+        if (currentRoomId && myOrderId !== null) {
+          safeSend({ type: 'rejoin', roomId: currentRoomId, orderId: myOrderId });
+        }
+        refreshRoomList();
+      };
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        
+        // 处理重连响应
+        if (msg.type === 'rejoined') {
+          players = msg.players;
+          updatePlayerList();
+          updateColorPicker();
+          return;
+        }
+        
+        // 忽略pong消息
+        if (msg.type === 'pong') return;
+        
+        handleMessage(msg);
+      };
+      
+      ws.onclose = () => {
+        setTimeout(reconnect, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    }
+    
     window.onload = function() {
       connect();
       initBoard();
       setInterval(refreshRoomList, 10000);
+      // 添加心跳定时器
+      setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+      // 监听页面可见性变化
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     };
   </script>
 </body>

@@ -6,13 +6,8 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// WebSocket server config
-const wss = new WebSocket.Server({ 
-  server,
-  path: '/'
-});
+const wss = new WebSocket.Server({ server, path: '/' });
 
-// Safe WebSocket send
 function safeSend(ws, data) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(data));
@@ -20,22 +15,18 @@ function safeSend(ws, data) {
 }
 
 wss.on('connection', (ws, req) => {
-  console.log('New WebSocket connection from:', req.headers.host);
+  console.log('New connection from:', req.headers.host);
 });
 
-// Static files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Room management
 const PLAYER_ROLES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
 const PLAYER_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
 
-// Generate room ID
 function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Create room
 function createRoom(ws, roomId, playerName) {
   const room = {
     id: roomId,
@@ -48,12 +39,10 @@ function createRoom(ws, roomId, playerName) {
     createdAt: Date.now(),
     lastActivity: Date.now()
   };
-  
   rooms.set(roomId, room);
   return room;
 }
 
-// Join room
 function joinRoom(ws, roomId, playerName, colorId = null) {
   const room = rooms.get(roomId);
   if (!room) return { success: false, message: '房间不存在' };
@@ -67,13 +56,11 @@ function joinRoom(ws, roomId, playerName, colorId = null) {
   const disconnectedPlayer = room.players.find(p => p.name === playerName && p.ws && p.ws.readyState !== WebSocket.OPEN);
   if (disconnectedPlayer) {
     disconnectedPlayer.ws = ws;
+    disconnectedPlayer.reconnected = true;
     return { success: true, room, reconnect: true };
   }
   
-  // Get taken colors
   const takenColors = room.players.map(p => p.colorId);
-  
-  // Assign color
   let selectedColorId = colorId;
   if (selectedColorId === null || takenColors.includes(selectedColorId)) {
     for (let i = 0; i < 10; i++) {
@@ -84,23 +71,21 @@ function joinRoom(ws, roomId, playerName, colorId = null) {
     }
   }
   
-  // Order ID = current player count (0, 1, 2...)
   const orderId = room.players.length;
   
-  // Add new player
   room.players.push({
     orderId: orderId,
     colorId: selectedColorId,
     name: playerName,
     color: PLAYER_COLORS[selectedColorId],
     role: PLAYER_ROLES[selectedColorId],
-    ws: ws
+    ws: ws,
+    reconnected: false
   });
   
   return { success: true, room };
 }
 
-// Broadcast to room
 function broadcast(room, message, excludeWs = null) {
   room.players.forEach(player => {
     if (player.ws !== excludeWs && player.ws.readyState === WebSocket.OPEN) {
@@ -109,7 +94,6 @@ function broadcast(room, message, excludeWs = null) {
   });
 }
 
-// Check win
 function checkWin(board, row, col, player) {
   const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
   const size = 15;
@@ -188,12 +172,12 @@ wss.on('connection', (ws) => {
           colorId: playerInfo.colorId,
           ownerOrderId: ownerOrderId,
           reconnect: result.reconnect || false,
-          players: result.room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+          players: result.room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, isOnline: p.ws.readyState === WebSocket.OPEN }))
         });
         
         broadcast(result.room, {
           type: 'playerJoined',
-          players: result.room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+          players: result.room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, isOnline: p.ws.readyState === WebSocket.OPEN }))
         });
         break;
       }
@@ -253,7 +237,6 @@ wss.on('connection', (ws) => {
         const currentPlayer = currentRoom.players.find(p => p.orderId === msg.orderId);
         if (!currentPlayer) return;
         
-        // Place piece (store colorId + 1)
         currentRoom.board[row][col] = currentPlayer.colorId + 1;
         currentRoom.history.push({ row, col, player: msg.orderId, colorId: currentPlayer.colorId, timestamp: Date.now() });
         currentRoom.lastActivity = Date.now();
@@ -310,6 +293,42 @@ wss.on('connection', (ws) => {
         break;
       }
       
+      case 'ping': {
+        safeSend(ws, { type: 'pong' });
+        break;
+      }
+      
+      case 'rejoin': {
+        if (!msg.roomId || msg.orderId === undefined) return;
+        const room = rooms.get(msg.roomId);
+        if (!room) {
+          safeSend(ws, { type: 'error', message: '房间已不存在' });
+          return;
+        }
+        
+        const player = room.players.find(p => p.orderId === msg.orderId);
+        if (player) {
+          player.ws = ws;
+          player.reconnected = true;
+          currentRoom = room;
+          playerInfo = player;
+          
+          safeSend(ws, { 
+            type: 'rejoined', 
+            roomId: room.id,
+            players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+          });
+          
+          // Notify others
+          broadcast(room, {
+            type: 'playerRejoined',
+            playerName: player.name,
+            players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+          });
+        }
+        break;
+      }
+      
       case 'leave': {
         if (currentRoom) {
           const playerIndex = currentRoom.players.findIndex(p => p.ws === ws);
@@ -328,6 +347,8 @@ wss.on('connection', (ws) => {
               });
             }
           }
+          currentRoom = null;
+          playerInfo = null;
         }
         break;
       }
@@ -335,65 +356,77 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    if (currentRoom) {
-      const playerIndex = currentRoom.players.findIndex(p => p.ws === ws);
-      if (playerIndex !== -1) {
-        const playerName = currentRoom.players[playerIndex].name;
-        const wasGameStarted = currentRoom.gameStarted;
-        
-        currentRoom.players.splice(playerIndex, 1);
-        
-        if (currentRoom.players.length === 0) {
-          rooms.delete(currentRoom.id);
-        } else {
+    if (currentRoom && playerInfo) {
+      const playerName = playerInfo.name;
+      const wasGameStarted = currentRoom.gameStarted;
+      
+      // Mark player as offline instead of removing
+      playerInfo.ws = null;
+      playerInfo.offline = true;
+      
+      // Notify others
+      broadcast(currentRoom, {
+        type: 'playerOffline',
+        playerName: playerName,
+        orderId: playerInfo.orderId,
+        players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+      });
+      
+      // If game started and player was current turn, skip to next
+      if (wasGameStarted && currentRoom.gameStarted) {
+        const offlinePlayer = currentRoom.players.find(p => p.orderId === currentRoom.currentPlayer && p.ws === null);
+        if (offlinePlayer) {
+          currentRoom.currentPlayer = (currentRoom.currentPlayer + 1) % currentRoom.players.length;
           broadcast(currentRoom, {
-            type: 'playerLeft',
+            type: 'playerSkipped',
             playerName: playerName,
-            players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
+            currentPlayer: currentRoom.currentPlayer
           });
-          
-          if (wasGameStarted && currentRoom.gameStarted) {
-            currentRoom.gameStarted = false;
-            currentRoom.winner = null;
-            broadcast(currentRoom, {
-              type: 'gameEnd',
-              reason: playerName + ' 离开了游戏'
-            });
-          }
         }
       }
     }
   });
 });
 
-// Clean up idle rooms every 5 minutes
+// Clean up idle rooms every 3 minutes
 setInterval(() => {
   const now = Date.now();
   let cleaned = 0;
   
   rooms.forEach((room, roomId) => {
+    // Remove completely empty rooms
     if (room.players.length === 0) {
       rooms.delete(roomId);
       cleaned++;
       return;
     }
     
-    const lastActivity = room.history.length > 0 
-      ? Math.max(...room.history.map(h => h.timestamp || 0))
-      : room.createdAt || now;
-    
-    if (now - lastActivity > 30 * 60 * 1000) {
+    // Remove rooms where all players are offline for 10 minutes
+    const allOffline = room.players.every(p => p.ws === null);
+    if (allOffline && now - room.lastActivity > 10 * 60 * 1000) {
       rooms.delete(roomId);
       cleaned++;
+      return;
+    }
+    
+    // Clean up offline players who have been gone for 30 minutes
+    if (!room.gameStarted) {
+      const activePlayers = room.players.filter(p => p.ws !== null);
+      const offlineTooLong = room.players.filter(p => p.ws === null && now - room.lastActivity > 30 * 60 * 1000);
+      
+      if (offlineTooLong.length > 0 && activePlayers.length + offlineTooLong.length === room.players.length) {
+        room.players = activePlayers;
+        cleaned++;
+      }
     }
   });
   
   if (cleaned > 0) {
-    console.log(`Cleaned ${cleaned} idle rooms, ${rooms.size} remaining`);
+    console.log('Cleaned ' + cleaned + ' rooms');
   }
-}, 5 * 60 * 1000);
+}, 3 * 60 * 1000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log('Server running on http://localhost:' + PORT);
 });
