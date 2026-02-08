@@ -346,7 +346,8 @@
     let currentRoomId = null;
     let players = [];
     let currentTurn = null;
-    let pendingOfflineOrderId = null;
+    let waitingReconnect = false; // 等待重连状态
+    let pendingOfflineOrderId = null; // 待处理的离线玩家
     
     function connect() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -416,7 +417,10 @@
           initBoard();
           currentTurn = 0;
           clearChat();
+          players = msg.players; // 更新玩家列表
+          ownerOrderId = msg.ownerOrderId || 0;
           updateGame();
+          updatePlayerList();
           addSystemMessage('游戏开始！按加入顺序下棋');
           break;
           
@@ -430,7 +434,9 @@
           break;
           
         case 'playerOffline':
+          waitingReconnect = true;
           addSystemMessage(msg.playerName + ' 离线了');
+          updateTurn();
           break;
           
         case 'ownerConfirm':
@@ -444,18 +450,25 @@
           
         case 'playerReconnected':
           players = msg.players;
+          waitingReconnect = false;
+          ownerOrderId = players[0]?.orderId || 0;
           addSystemMessage(msg.playerName + ' 已重连！');
+          updatePlayerList();
           updateTurn();
           break;
           
         case 'gameResumed':
+          waitingReconnect = false;
           addSystemMessage(msg.message);
+          updateTurn();
           break;
           
         case 'playerRemoved':
+          waitingReconnect = false;
           players = msg.players;
           currentTurn = msg.currentPlayer;
           addSystemMessage(msg.playerName + ' 已被移除');
+          updatePlayerList();
           updateTurn();
           break;
           
@@ -640,6 +653,14 @@
     
     function updateTurn() {
       const turnIndicator = document.getElementById('currentTurn');
+      
+      // 检查是否等待重连
+      if (waitingReconnect) {
+        turnIndicator.className = 'turn-indicator paused';
+        turnIndicator.innerHTML = '⏸ 等待房主处理...';
+        return;
+      }
+      
       const player = players.find(p => p.orderId === currentTurn);
       
       if (player) {

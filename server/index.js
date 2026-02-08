@@ -219,12 +219,14 @@ wss.on('connection', (ws) => {
             currentRoom.waitingReconnect = false;
             currentRoom.pendingOfflineOrderId = null;
             
-            // 找到下一个在线玩家
+            // 确保当前玩家是有效在线玩家
             const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
             if (onlinePlayers.length > 0) {
               const currentIdx = onlinePlayers.findIndex(p => p.orderId === currentRoom.currentPlayer);
               if (currentIdx === -1 || currentIdx >= onlinePlayers.length) {
-                currentRoom.currentPlayer = onlinePlayers[0].orderId;
+                // 如果当前玩家被移除，找下一个玩家
+                const offlineIdx = currentRoom.players.findIndex(p => p.orderId === offlineOrderId);
+                currentRoom.currentPlayer = currentRoom.players[Math.min(offlineIdx, currentRoom.players.length - 1)].orderId;
               }
             }
             
@@ -352,6 +354,7 @@ wss.on('connection', (ws) => {
         
         const wasOwner = currentRoom.players[0]?.orderId === player.orderId;
         const playerName = player.name;
+        const playerOrderId = player.orderId;
         
         // 游戏已开始，标记离线
         if (currentRoom.gameStarted) {
@@ -360,25 +363,44 @@ wss.on('connection', (ws) => {
           broadcast(currentRoom, {
             type: 'playerOffline',
             playerName: playerName,
-            orderId: player.orderId
+            orderId: playerOrderId
           });
           
-          // 如果是当前玩家回合，房主决定是否等待
-          if (currentRoom.currentPlayer === player.orderId) {
-            currentRoom.waitingReconnect = true;
-            currentRoom.pendingOfflineOrderId = player.orderId;
-            currentRoom.lastActivity = Date.now();
-            
-            // 通知房主
+          // 任何玩家离线都暂停游戏，让房主决定
+          currentRoom.waitingReconnect = true;
+          currentRoom.pendingOfflineOrderId = playerOrderId;
+          currentRoom.lastActivity = Date.now();
+          
+          // 如果是房主离线，先转移房主
+          if (wasOwner) {
+            const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
+            if (onlinePlayers.length > 0) {
+              const newOwner = onlinePlayers[0];
+              broadcast(currentRoom, {
+                type: 'ownerChanged',
+                newOwnerOrderId: newOwner.orderId,
+                newOwnerName: newOwner.name
+              });
+              
+              // 通知新房主做决定
+              if (newOwner.ws && newOwner.ws.readyState === WebSocket.OPEN) {
+                safeSend(newOwner.ws, {
+                  type: 'ownerConfirm',
+                  playerName: playerName,
+                  orderId: playerOrderId
+                });
+              }
+            }
+          } else {
+            // 通知房主做决定
             const owner = currentRoom.players.find(p => p.orderId === currentRoom.players[0]?.orderId);
             if (owner && owner.ws && owner.ws.readyState === WebSocket.OPEN) {
               safeSend(owner.ws, {
                 type: 'ownerConfirm',
                 playerName: playerName,
-                orderId: player.orderId
+                orderId: playerOrderId
               });
             }
-            
           }
         } else {
           // 游戏未开始，直接移除
@@ -421,6 +443,7 @@ wss.on('connection', (ws) => {
     
     const wasOwner = currentRoom.players[0]?.orderId === player.orderId;
     const playerName = player.name;
+    const playerOrderId = player.orderId;
     
     // 游戏已开始，标记离线
     if (currentRoom.gameStarted) {
@@ -429,21 +452,42 @@ wss.on('connection', (ws) => {
       broadcast(currentRoom, {
         type: 'playerOffline',
         playerName: playerName,
-        orderId: player.orderId
+        orderId: playerOrderId
       });
       
-      // 如果是当前玩家回合，房主决定
-      if (currentRoom.currentPlayer === player.orderId) {
-        currentRoom.waitingReconnect = true;
-        currentRoom.pendingOfflineOrderId = player.orderId;
-        currentRoom.lastActivity = Date.now();
-        
+      // 任何玩家离线都暂停游戏，让房主决定
+      currentRoom.waitingReconnect = true;
+      currentRoom.pendingOfflineOrderId = playerOrderId;
+      currentRoom.lastActivity = Date.now();
+      
+      // 如果是房主离线，先转移房主
+      if (wasOwner) {
+        const onlinePlayers = currentRoom.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
+        if (onlinePlayers.length > 0) {
+          const newOwner = onlinePlayers[0];
+          broadcast(currentRoom, {
+            type: 'ownerChanged',
+            newOwnerOrderId: newOwner.orderId,
+            newOwnerName: newOwner.name
+          });
+          
+          // 通知新房主做决定
+          if (newOwner.ws && newOwner.ws.readyState === WebSocket.OPEN) {
+            safeSend(newOwner.ws, {
+              type: 'ownerConfirm',
+              playerName: playerName,
+              orderId: playerOrderId
+            });
+          }
+        }
+      } else {
+        // 通知房主做决定
         const owner = currentRoom.players.find(p => p.orderId === currentRoom.players[0]?.orderId);
         if (owner && owner.ws && owner.ws.readyState === WebSocket.OPEN) {
           safeSend(owner.ws, {
             type: 'ownerConfirm',
             playerName: playerName,
-            orderId: player.orderId
+            orderId: playerOrderId
           });
         }
       }
@@ -506,7 +550,15 @@ setInterval(() => {
         room.waitingReconnect = false;
         
         if (room.players.length > 0) {
-          room.currentPlayer = room.players[0].orderId;
+          // 确保当前玩家是有效在线玩家
+          const onlinePlayers = room.players.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
+          if (onlinePlayers.length > 0) {
+            const currentIdx = onlinePlayers.findIndex(p => p.orderId === room.currentPlayer);
+            if (currentIdx === -1 || currentIdx >= onlinePlayers.length) {
+              room.currentPlayer = onlinePlayers[0].orderId;
+            }
+          }
+          
           broadcast(room, {
             type: 'playerRemoved',
             playerName: '离线玩家',
