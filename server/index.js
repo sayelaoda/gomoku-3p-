@@ -164,9 +164,7 @@ wss.on('connection', (ws) => {
         
         if (existingPlayer) {
           existingPlayer.ws = ws;
-          // 重连时不再自动成为房主
-          // 如果需要转让房主，应该在离线时已经处理过了
-          existingPlayer.isOwner = false;
+          // 重连时保持当前isOwner状态不变（房主转让在离线时已处理）
           currentRoom = room;
           playerInfo = existingPlayer;
           
@@ -287,8 +285,10 @@ wss.on('connection', (ws) => {
           safeSend(ws, { type: 'error', message: '至少需要2名玩家' });
           return;
         }
+        // 使用第一个玩家的orderId作为currentPlayer
+        const firstPlayer = currentRoom.players[0];
+        currentRoom.currentPlayer = firstPlayer ? firstPlayer.orderId : 0;
         currentRoom.gameStarted = true;
-        currentRoom.currentPlayer = 0;
         currentRoom.board = Array(15).fill(null).map(() => Array(15).fill(0));
         currentRoom.history = [];
         currentRoom.winner = null;
@@ -297,7 +297,7 @@ wss.on('connection', (ws) => {
         
         broadcast(currentRoom, { 
           type: 'gameStart', 
-          currentPlayer: 0,
+          currentPlayer: currentRoom.currentPlayer,
           ownerOrderId: getOwnerOrderId(currentRoom),
           players: currentRoom.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color }))
         });
