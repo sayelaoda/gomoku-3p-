@@ -204,7 +204,7 @@
       padding: 2px;
       cursor: pointer;
       width: 100%;
-      max-width: 420px;
+      max-width: 500px;
       aspect-ratio: 1;
       margin: 0 auto;
     }
@@ -414,7 +414,13 @@
         padding: 16px;
       }
       #gameBoard {
-        max-width: 100%;
+        max-width: 400px;
+      }
+    }
+    
+    @media (min-width: 1200px) {
+      #gameBoard {
+        max-width: 600px;
       }
     }
     
@@ -432,6 +438,9 @@
       .btn {
         padding: 12px;
         font-size: 14px;
+      }
+      #gameBoard {
+        max-width: 100%;
       }
     }
   </style>
@@ -738,8 +747,8 @@
         <div class="player-item ${p.id === playerId ? 'current' : ''}">
           <div class="player-color" style="background: ${colors[i]}"></div>
           <div class="player-info">
-            <div class="player-nickname">${p.name} ${p.id === playerId ? '(你)' : ''}</div>
-            <div class="player-role">${colorNames[i]}</div>
+            <div class="player-nickname">👤 ${p.name}</div>
+            <div class="player-role">${p.id === playerId ? '✅ 你是' : ''}${colorNames[i]}</div>
           </div>
         </div>
       `).join('');
@@ -792,10 +801,10 @@
       
       // 查找当前玩家昵称
       const currentPlayerInfo = players.find(p => p.id === player);
-      const playerName = currentPlayerInfo ? currentPlayerInfo.name : '';
+      const playerName = currentPlayerInfo ? currentPlayerInfo.name : '未知';
       
       indicator.style.background = colors[player];
-      text.textContent = `${names[player]} (${playerName}) 的回合`;
+      text.textContent = `🎯 现在是 ${names[player]} (${playerName}) 落子`;
       
       const turnDiv = document.getElementById('currentTurn');
       if (player === 1) {
