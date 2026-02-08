@@ -49,7 +49,7 @@ function createRoom(ws, roomId, playerName) {
 }
 
 // 加入房间
-function joinRoom(ws, roomId, playerName) {
+function joinRoom(ws, roomId, playerName, colorId = null) {
   const room = rooms.get(roomId);
   if (!room) return { success: false, message: '房间不存在' };
   
@@ -66,13 +66,27 @@ function joinRoom(ws, roomId, playerName) {
     return { success: true, room, reconnect: true };
   }
   
+  // 获取可用颜色
+  const takenColors = room.players.map(p => p.id);
+  
+  // 如果指定了颜色且可用
+  let playerId = colorId;
+  if (playerId === null || takenColors.includes(playerId)) {
+    // 自动分配第一个可用颜色
+    for (let i = 0; i < 3; i++) {
+      if (!takenColors.includes(i)) {
+        playerId = i;
+        break;
+      }
+    }
+  }
+  
   // 添加新玩家
-  const playerIndex = room.players.length;
   room.players.push({
-    id: playerIndex,
+    id: playerId,
     name: playerName,
-    color: COLORS[playerIndex],
-    role: PLAYERS[playerIndex],
+    color: COLORS[playerId],
+    role: PLAYERS[playerId],
     ws: ws
   });
   
@@ -151,7 +165,7 @@ wss.on('connection', (ws) => {
       
       case 'join': {
         // 加入房间
-        const result = joinRoom(ws, msg.roomId, msg.playerName || `玩家${Date.now() % 1000}`);
+        const result = joinRoom(ws, msg.roomId, msg.playerName || `玩家${Date.now() % 1000}`, msg.colorId);
         if (!result.success) {
           ws.send(JSON.stringify({ type: 'error', message: result.message }));
           return;
@@ -195,6 +209,39 @@ wss.on('connection', (ws) => {
           currentPlayer: 0,
           players: currentRoom.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
         });
+        break;
+      }
+      
+      case 'selectColor': {
+        // 选择颜色
+        if (!currentRoom) return;
+        if (currentRoom.gameStarted) return;
+        
+        const newColorId = msg.colorId;
+        const takenColors = currentRoom.players.map(p => p.id).filter(id => id !== playerId);
+        
+        // 检查颜色是否被占用
+        if (takenColors.includes(newColorId)) {
+          ws.send(JSON.stringify({ type: 'error', message: '该颜色已被占用' }));
+          return;
+        }
+        
+        // 更新玩家颜色
+        const player = currentRoom.players.find(p => p.ws === ws);
+        if (player) {
+          player.id = newColorId;
+          player.color = COLORS[newColorId];
+          player.role = PLAYERS[newColorId];
+          
+          // 重新排序玩家数组
+          currentRoom.players.sort((a, b) => a.id - b.id);
+          
+          // 广播通知所有玩家
+          broadcast(currentRoom, {
+            type: 'colorChanged',
+            players: currentRoom.players.map(p => ({ id: p.id, name: p.name, role: p.role }))
+          });
+        }
         break;
       }
       

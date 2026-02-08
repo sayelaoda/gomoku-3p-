@@ -243,16 +243,6 @@
       background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
     }
     
-    .last-move::after {
-      content: '';
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: red;
-      border-radius: 50%;
-      z-index: 2;
-    }
-    
     .game-info {
       display: flex;
       justify-content: space-between;
@@ -403,6 +393,106 @@
       margin: 0 auto 20px;
     }
     
+    /* 游戏界面新布局 */
+    .my-piece-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    
+    .my-piece-color {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+    }
+    
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-weight: bold;
+    }
+    
+    .my-nickname-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+    }
+    
+    /* 颜色选择器 */
+    .color-selector {
+      margin: 16px 0;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .color-selector label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: bold;
+    }
+    
+    .color-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .color-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+    
+    .color-option.selected {
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+    }
+    
+    .color-option.taken {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    .current-turn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .turn-indicator {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+    }
+    
     @media (max-width: 900px) {
       .container {
         flex-direction: column;
@@ -493,28 +583,44 @@
         <button id="startBtn" class="btn btn-success" onclick="startGame()" disabled>
           🚀 开始游戏 (至少2人)
         </button>
+        
+        <!-- 颜色选择器 -->
+        <div id="colorSelector" class="color-selector">
+          <label>选择棋子颜色：</label>
+          <div class="color-options" id="colorOptions"></div>
+        </div>
+        
         <button class="btn btn-warning" onclick="leaveRoom()">离开房间</button>
       </div>
       
       <!-- 游戏界面 -->
       <div id="gameScreen" class="screen">
-        <div class="game-info">
-          <div id="currentTurn" class="current-turn">
-            <span class="turn-indicator" id="turnIndicator"></span>
-            <span id="turnText">等待开始...</span>
-          </div>
-          <button class="btn btn-primary" onclick="restartGame()" style="width: auto; padding: 8px 16px;">
-            重新开始
-          </button>
+        <!-- 顶部：当前回合 -->
+        <div id="currentTurn" class="current-turn">
+          <span class="turn-indicator" id="turnIndicator"></span>
+          <span id="turnText">等待开始...</span>
         </div>
         
+        <!-- 棋盘 -->
         <div id="gameBoard"></div>
+        
+        <!-- 底部：我的棋子 -->
+        <div id="myPieceInfo" class="my-piece-info">
+          <span>你的棋子：</span>
+          <span id="myPieceColor" class="my-piece-color"></span>
+          <span id="myPieceName"></span>
+        </div>
       </div>
     </div>
     
     <div class="sidebar">
       <div id="gameChat" style="display: none;">
-        <h3 style="margin-bottom: 16px;">💬 游戏聊天</h3>
+        <!-- 聊天头部：显示自己信息 -->
+        <div id="chatHeader" class="chat-header">
+          <span>👤 </span>
+          <span id="myNickname"></span>
+          <span id="myNicknameColor" class="my-nickname-color"></span>
+        </div>
         <div class="chat-container">
           <div id="chatMessages"></div>
           <div class="chat-input">
@@ -691,6 +797,12 @@
         case 'chat':
           addChatMessage(msg.playerName, msg.message);
           break;
+          
+        case 'colorChanged':
+          // 更新玩家列表和颜色选择器
+          updatePlayersList(msg.players);
+          initColorSelector();
+          break;
       }
     }
     
@@ -734,6 +846,48 @@
       currentRoom = roomId;
       document.getElementById('roomId').textContent = roomId;
       switchScreen('waitingScreen');
+      initColorSelector();
+    }
+    
+    // 初始化颜色选择器
+    function initColorSelector() {
+      const colors = [
+        { id: 0, color: '#000000', name: '黑棋' },
+        { id: 1, color: '#FFFFFF', name: '白棋' },
+        { id: 2, color: '#FF0000', name: '红棋' }
+      ];
+      
+      const container = document.getElementById('colorOptions');
+      container.innerHTML = colors.map(c => `
+        <div class="color-option" 
+             style="background: ${c.color}" 
+             data-color-id="${c.id}"
+             onclick="selectColor(${c.id})"
+             title="${c.name}"></div>
+      `).join('');
+      
+      // 默认选择黑棋
+      selectColor(0);
+    }
+    
+    // 选择颜色
+    function selectColor(colorId) {
+      // 检查颜色是否已被占用
+      const takenColors = players.map(p => p.id);
+      if (takenColors.includes(colorId)) {
+        return; // 颜色已被占用
+      }
+      
+      // 更新UI
+      document.querySelectorAll('.color-option').forEach((el, i) => {
+        el.classList.remove('selected');
+        el.classList.toggle('taken', takenColors.includes(i));
+      });
+      
+      document.querySelector(`[data-color-id="${colorId}"]`).classList.add('selected');
+      
+      // 发送选择颜色消息
+      safeSend({ type: 'selectColor', colorId });
     }
     
     // 更新玩家列表
@@ -773,6 +927,40 @@
       switchScreen('gameScreen');
       document.getElementById('gameChat').style.display = 'block';
       document.getElementById('menuChat').style.display = 'none';
+      
+      // 更新我的棋子信息
+      updateMyPieceInfo();
+      
+      // 更新聊天头部
+      updateChatHeader();
+    }
+    
+    // 更新我的棋子信息
+    function updateMyPieceInfo() {
+      const pieceInfo = document.getElementById('myPieceInfo');
+      const pieceColor = document.getElementById('myPieceColor');
+      const pieceName = document.getElementById('myPieceName');
+      const colors = ['#000000', '#FFFFFF', '#FF0000'];
+      const colorNames = ['黑棋', '白棋', '红棋'];
+      
+      const myPlayer = players.find(p => p.id === playerId);
+      if (myPlayer) {
+        pieceColor.style.background = colors[myPlayer.id];
+        pieceName.textContent = colorNames[myPlayer.id];
+      }
+    }
+    
+    // 更新聊天头部
+    function updateChatHeader() {
+      const nickname = document.getElementById('myNickname');
+      const nicknameColor = document.getElementById('myNicknameColor');
+      const colors = ['#000000', '#FFFFFF', '#FF0000'];
+      
+      const myPlayer = players.find(p => p.id === playerId);
+      if (myPlayer) {
+        nickname.textContent = myPlayer.name;
+        nicknameColor.style.background = colors[myPlayer.id];
+      }
     }
     
     // 下棋
@@ -789,7 +977,6 @@
       const colors = ['black', 'white', 'red'];
       piece.classList.add(colors[player]);
       cell.appendChild(piece);
-      cell.classList.add('last-move');
     }
     
     // 更新当前回合
@@ -844,7 +1031,6 @@
       const cells = document.querySelectorAll('.cell');
       cells.forEach(cell => {
         cell.innerHTML = '';
-        cell.classList.remove('last-move');
       });
     }
     
