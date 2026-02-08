@@ -827,18 +827,6 @@
       container.scrollTop = container.scrollHeight;
     }
     
-    // 手机端后台检测 - 只在游戏内生效
-    document.addEventListener('visibilitychange', function() {
-      if (document.hidden) {
-        // 进入后台，游戏内自动离开
-        if (currentRoomId && ws && ws.readyState === WebSocket.OPEN && document.getElementById('gameScreen').classList.contains('active')) {
-          ws.send(JSON.stringify({ type: 'leave' }));
-          console.log('游戏内进入后台，自动离开');
-        }
-      }
-      // 切回前台不做任何操作
-    });
-    
     window.onload = function() {
       connect();
       initBoard();
