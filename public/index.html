@@ -132,15 +132,17 @@
     .cell:hover { background: #d4a574; }
     .cell:active { background: #c49464; }
     
-    /* 最新落子高亮 */
-    .cell.last-move .piece {
-      box-shadow: 0 0 0 3px #ff0000, 0 0 15px rgba(255, 0, 0, 0.8) !important;
-      animation: lastPulse 1s infinite;
-    }
-    
-    @keyframes lastPulse {
-      0%, 100% { box-shadow: 0 0 0 3px #ff0000, 0 0 10px rgba(255, 0, 0, 0.5); }
-      50% { box-shadow: 0 0 0 4px #ff0000, 0 0 20px rgba(255, 0, 0, 0.8); }
+    /* 最新落子提示红点 */
+    .cell.last-move::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #ff0000;
+      border-radius: 50%;
+      z-index: 10;
+      pointer-events: none;
+      box-shadow: 0 0 4px rgba(0,0,0,0.5);
     }
     
     .piece {
@@ -151,7 +153,7 @@
     }
     .piece.black { background: radial-gradient(circle at 30% 30%, #666, #000); }
     .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
-    .piece.red { background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7); }
+    .piece.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c00); }
     .piece.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3); }
     .piece.green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
     .piece.yellow { background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e); }
@@ -256,7 +258,7 @@
 <body>
   <div class="container">
     <div class="game-panel">
-      <h1>多人五子棋</h1>
+      <h1>多人五子棋 <span id="version" style="font-size:14px;color:#999;">v1.0.1</span></h1>
       
       <div id="menuScreen" class="screen active">
         <div class="rules">
@@ -415,6 +417,9 @@
       switch (msg.type) {
         case 'created':
         case 'joined':
+          if (msg.version) {
+            document.getElementById('version').textContent = 'v' + msg.version;
+          }
           currentRoomId = msg.roomId;
           myOrderId = msg.orderId;
           myColorId = msg.colorId;
@@ -551,6 +556,9 @@
           break;
           
         case 'rejoined':
+          if (msg.version) {
+            document.getElementById('version').textContent = 'v' + msg.version;
+          }
           currentRoomId = msg.roomId;
           myOrderId = msg.orderId;
           myColorId = msg.colorId;

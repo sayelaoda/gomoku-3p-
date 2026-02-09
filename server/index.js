@@ -3,6 +3,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 
+const GAME_VERSION = '1.0.1';
+
 const app = express();
 const server = http.createServer(app);
 
@@ -98,6 +100,7 @@ wss.on('connection', (ws) => {
         
         safeSend(ws, { 
           type: 'created', 
+          version: GAME_VERSION,
           roomId, 
           orderId: 0, 
           colorId: 0, 
@@ -124,6 +127,7 @@ wss.on('connection', (ws) => {
             
             safeSend(ws, { 
               type: 'rejoined', 
+              version: GAME_VERSION,
               roomId: room.id,
               orderId: offlinePlayer.orderId,
               colorId: offlinePlayer.colorId,
@@ -162,6 +166,7 @@ wss.on('connection', (ws) => {
           
           safeSend(ws, { 
             type: 'rejoined', 
+            version: GAME_VERSION,
             roomId: room.id,
             orderId: existingPlayer.orderId,
             colorId: existingPlayer.colorId,
@@ -230,6 +235,7 @@ wss.on('connection', (ws) => {
         
         safeSend(ws, { 
           type: 'joined', 
+          version: GAME_VERSION,
           roomId: room.id, 
           orderId: player.orderId,
           colorId: player.colorId,
