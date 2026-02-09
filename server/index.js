@@ -3,8 +3,6 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 
-const GAME_VERSION = '1.0.3';
-
 const app = express();
 const server = http.createServer(app);
 
@@ -31,7 +29,7 @@ wss.on('connection', (ws, req) => {
 app.use(express.static(path.join(__dirname, '../public')));
 
 const PLAYER_ROLES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
-const PLAYER_COLORS = ['#000000', '#FFFFFF', '#6c5ce7', '#0984e3', '#00b894', '#fdcb6e', '#e17055', '#e84393', '#00cec9', '#a29bfe'];
+const PLAYER_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
 
 function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -100,7 +98,6 @@ wss.on('connection', (ws) => {
         
         safeSend(ws, { 
           type: 'created', 
-          version: GAME_VERSION,
           roomId, 
           orderId: 0, 
           colorId: 0, 
@@ -127,13 +124,11 @@ wss.on('connection', (ws) => {
             
             safeSend(ws, { 
               type: 'rejoined', 
-              version: GAME_VERSION,
               roomId: room.id,
               orderId: offlinePlayer.orderId,
               colorId: offlinePlayer.colorId,
               board: room.board,
               currentPlayer: room.currentPlayer,
-              lastMove: room.lastMove,
               ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? 0,
               players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
             });
@@ -166,13 +161,11 @@ wss.on('connection', (ws) => {
           
           safeSend(ws, { 
             type: 'rejoined', 
-            version: GAME_VERSION,
             roomId: room.id,
             orderId: existingPlayer.orderId,
             colorId: existingPlayer.colorId,
             board: room.board,
             currentPlayer: room.currentPlayer,
-            lastMove: room.lastMove,
             ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? 0,
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
           });
@@ -235,7 +228,6 @@ wss.on('connection', (ws) => {
         
         safeSend(ws, { 
           type: 'joined', 
-          version: GAME_VERSION,
           roomId: room.id, 
           orderId: player.orderId,
           colorId: player.colorId,
@@ -313,11 +305,10 @@ wss.on('connection', (ws) => {
         currentRoom.board[row][col] = currentPlayer.colorId + 1;
         currentRoom.history.push({ row, col, player: msg.orderId, colorId: currentPlayer.colorId, timestamp: Date.now() });
         currentRoom.lastActivity = Date.now();
-        currentRoom.lastMove = { row, col, orderId: msg.orderId };
         
         const isWin = checkWin(currentRoom.board, row, col, currentPlayer.colorId + 1);
         
-        const moveData = { type: 'move', row, col, orderId: msg.orderId, colorId: currentPlayer.colorId, lastMove: { row, col } };
+        const moveData = { type: 'move', row, col, orderId: msg.orderId, colorId: currentPlayer.colorId };
         
         if (isWin) {
           currentRoom.winner = msg.orderId;
