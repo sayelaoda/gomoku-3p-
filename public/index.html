@@ -417,20 +417,6 @@
           addSystemMessage(msg.playerName + ' 离开了房间');
           break;
           
-        case 'roomDismissed':
-          alert(msg.message || '房主已离开，房间解散');
-          currentRoomId = null;
-          myOrderId = null;
-          ownerOrderId = 0;
-          players = [];
-          waitingReconnect = false;
-          pendingOfflineOrderId = null;
-          switchScreen('menuScreen');
-          document.getElementById('homeSidebar').style.display = 'block';
-          document.getElementById('gameSidebar').style.display = 'none';
-          refreshRoomList();
-          break;
-          
         case 'colorChanged':
           players = msg.players || [];
           updatePlayerList();
