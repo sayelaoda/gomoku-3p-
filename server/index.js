@@ -129,6 +129,7 @@ wss.on('connection', (ws) => {
               colorId: offlinePlayer.colorId,
               board: room.board,
               currentPlayer: room.currentPlayer,
+              lastMove: room.lastMove,
               ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? 0,
               players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
             });
@@ -166,6 +167,7 @@ wss.on('connection', (ws) => {
             colorId: existingPlayer.colorId,
             board: room.board,
             currentPlayer: room.currentPlayer,
+            lastMove: room.lastMove,
             ownerOrderId: room.players.find(p => p.isOwner)?.orderId ?? 0,
             players: room.players.map(p => ({ orderId: p.orderId, colorId: p.colorId, name: p.name, role: p.role, color: p.color, online: p.ws && p.ws.readyState === WebSocket.OPEN }))
           });
@@ -305,10 +307,11 @@ wss.on('connection', (ws) => {
         currentRoom.board[row][col] = currentPlayer.colorId + 1;
         currentRoom.history.push({ row, col, player: msg.orderId, colorId: currentPlayer.colorId, timestamp: Date.now() });
         currentRoom.lastActivity = Date.now();
+        currentRoom.lastMove = { row, col, orderId: msg.orderId };
         
         const isWin = checkWin(currentRoom.board, row, col, currentPlayer.colorId + 1);
         
-        const moveData = { type: 'move', row, col, orderId: msg.orderId, colorId: currentPlayer.colorId };
+        const moveData = { type: 'move', row, col, orderId: msg.orderId, colorId: currentPlayer.colorId, lastMove: { row, col } };
         
         if (isWin) {
           currentRoom.winner = msg.orderId;
