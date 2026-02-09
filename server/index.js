@@ -473,14 +473,18 @@ wss.on('connection', (ws) => {
         } else {
           // 游戏未开始，房主离开则房间解散
           if (wasOwner) {
-            // 先通知所有玩家房间解散
-            broadcast(currentRoom, {
-              type: 'roomDismissed',
-              message: '房主已离开，房间解散'
-            });
+            // 保存当前房间的players用于broadcast
+            const playersToNotify = [...currentRoom.players];
+            const dismissMessage = { type: 'roomDismissed', message: '房主已离开，房间解散' };
             rooms.delete(currentRoom.id);
             currentRoom = null;
             playerInfo = null;
+            // 手动通知其他玩家
+            playersToNotify.forEach(p => {
+              if (p.ws && p.ws.readyState === WebSocket.OPEN && p.ws !== ws) {
+                safeSend(p.ws, dismissMessage);
+              }
+            });
             return;
           }
           
