@@ -3,7 +3,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 
-const GAME_VERSION = '1.0.1';
+const GAME_VERSION = '1.0.3';
 
 const app = express();
 const server = http.createServer(app);
