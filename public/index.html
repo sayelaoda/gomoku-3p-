@@ -153,14 +153,14 @@
     }
     .piece.black { background: radial-gradient(circle at 30% 30%, #666, #000); }
     .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
-    .piece.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c00); }
+    .piece.purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7); }
     .piece.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3); }
     .piece.green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
     .piece.yellow { background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e); }
-    .piece.purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #6c5ce7); }
     .piece.orange { background: radial-gradient(circle at 30% 30%, #fab1a0, #e17055); }
     .piece.pink { background: radial-gradient(circle at 30% 30%, #fd79a8, #e84393); }
     .piece.cyan { background: radial-gradient(circle at 30% 30%, #81ecec, #00cec9); }
+    .piece.lightPurple { background: radial-gradient(circle at 30% 30%, #dfe6e9, #b2bec3); }
     
     .player-list { background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     
@@ -369,8 +369,8 @@
 
   <script>
     const PLAYER_ROLES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
-    const PLAYER_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0984e3', '#00b894', '#fdcb6e', '#6c5ce7', '#e17055', '#e84393', '#00cec9'];
-    const PIECE_CLASSES = ['black', 'white', 'red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
+    const PLAYER_COLORS = ['#000000', '#FFFFFF', '#6c5ce7', '#0984e3', '#00b894', '#fdcb6e', '#e17055', '#e84393', '#00cec9', '#a29bfe'];
+    const PIECE_CLASSES = ['black', 'white', 'purple', 'blue', 'green', 'yellow', 'orange', 'pink', 'cyan', 'lightPurple'];
     
     let ws = null;
     let myOrderId = null;

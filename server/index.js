@@ -31,7 +31,7 @@ wss.on('connection', (ws, req) => {
 app.use(express.static(path.join(__dirname, '../public')));
 
 const PLAYER_ROLES = ['黑棋', '白棋', '红棋', '蓝棋', '绿棋', '黄棋', '紫棋', '橙棋', '粉棋', '青棋'];
-const PLAYER_COLORS = ['#000000', '#FFFFFF', '#6c5ce7', '#0984e3', '#00b894', '#fdcb6e', '#e17055', '#e84393', '#00cec9', '#fd79a8'];
+const PLAYER_COLORS = ['#000000', '#FFFFFF', '#6c5ce7', '#0984e3', '#00b894', '#fdcb6e', '#e17055', '#e84393', '#00cec9', '#a29bfe'];
 
 function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
